@@ -1,0 +1,6 @@
+# x-sailjail-description = Stumblefish collector daemon
+# x-sailjail-long-description = Communicate with the Stumblefish background collector service
+
+dbus-user.talk org.stumblefish.Collector
+dbus-user.call org.stumblefish.Collector=org.stumblefish.Collector.*@/org/stumblefish/Collector
+dbus-user.broadcast org.stumblefish.Collector=org.stumblefish.Collector.*@/org/stumblefish/Collector

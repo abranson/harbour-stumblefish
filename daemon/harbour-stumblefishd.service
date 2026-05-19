@@ -1,0 +1,10 @@
+[Unit]
+Description=Stumblefish BeaconDB collector
+After=pre-user-session.target
+
+[Service]
+ExecStart=/usr/bin/harbour-stumblefishd
+Restart=always
+
+[Install]
+WantedBy=user-session.target

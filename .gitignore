@@ -1,0 +1,13 @@
+/.mb2/
+/RPMS/
+/documentation.list
+/installroot/
+/Makefile
+/src/Makefile
+/src/harbour-stumblefish
+/src/*.o
+/src/moc_*.cpp
+/daemon/Makefile
+/daemon/harbour-stumblefishd
+/daemon/*.o
+/daemon/moc_*.cpp

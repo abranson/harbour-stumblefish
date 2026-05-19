@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+X-Nemo-Application-Type=silica-qt5
+Icon=harbour-stumblefish
+Exec=harbour-stumblefish
+Name=Stumblefish
+
+[X-Sailjail]
+OrganizationName=org.stumblefish
+ApplicationName=Stumblefish
+Permissions=Location;Internet;Bluetooth;Stumblefish
