@@ -15,6 +15,8 @@ class StumblefishClient : public QObject
     Q_PROPERTY(QVariantMap settings READ settings NOTIFY settingsChanged)
     Q_PROPERTY(QVariantList reports READ reports NOTIFY reportsChanged)
     Q_PROPERTY(QVariantMap selectedReport READ selectedReport NOTIFY selectedReportChanged)
+    Q_PROPERTY(QVariantMap mapSummary READ mapSummary NOTIFY mapSummaryChanged)
+    Q_PROPERTY(QVariantList mapCells READ mapCells NOTIFY mapCellsChanged)
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
     Q_PROPERTY(QString message READ message NOTIFY messageChanged)
 
@@ -26,6 +28,8 @@ public:
     QVariantMap settings() const;
     QVariantList reports() const;
     QVariantMap selectedReport() const;
+    QVariantMap mapSummary() const;
+    QVariantList mapCells() const;
     bool busy() const;
     QString message() const;
 
@@ -34,18 +38,28 @@ public:
     Q_INVOKABLE void setMode(const QString &mode);
     Q_INVOKABLE void setSourceEnabled(const QString &source, bool enabled);
     Q_INVOKABLE void setEndpoint(const QString &endpoint);
+    Q_INVOKABLE void setMapTileUrlTemplate(const QString &mapTileUrlTemplate);
+    Q_INVOKABLE void setReportRetentionDays(int days);
     Q_INVOKABLE void setAutoUploadEnabled(bool enabled);
+    Q_INVOKABLE void setUploadOnNonWifi(bool enabled);
+    Q_INVOKABLE void setAllowBackgroundDaemon(bool enabled);
     Q_INVOKABLE void collectNow();
     Q_INVOKABLE void uploadPending();
     Q_INVOKABLE void retryReport(int id);
     Q_INVOKABLE void deleteReport(int id);
     Q_INVOKABLE void clearPendingReports();
+    Q_INVOKABLE void pruneReports();
+    Q_INVOKABLE void refreshMapSummary();
+    Q_INVOKABLE void requestMapCells(double minLatitude, double minLongitude,
+                                     double maxLatitude, double maxLongitude, int zoom);
 
 Q_SIGNALS:
     void statusChanged();
     void settingsChanged();
     void reportsChanged();
     void selectedReportChanged();
+    void mapSummaryChanged();
+    void mapCellsChanged();
     void busyChanged();
     void messageChanged();
 
@@ -58,6 +72,7 @@ private Q_SLOTS:
 
 private:
     void asyncCall(const QString &method, const QVariantList &arguments, const QString &kind);
+    void sendLifecycleMessage(const QString &method);
     void setBusyCount(int count);
     void setMessage(const QString &message);
     void setSetting(const QString &key, const QVariant &value);
@@ -67,6 +82,8 @@ private:
     QVariantMap m_settings;
     QVariantList m_reports;
     QVariantMap m_selectedReport;
+    QVariantMap m_mapSummary;
+    QVariantList m_mapCells;
     int m_busyCount;
     QString m_message;
 };

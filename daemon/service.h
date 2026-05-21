@@ -2,7 +2,11 @@
 #define STUMBLEFISH_SERVICE_H
 
 #include <QObject>
+#include <QDBusContext>
+#include <QDBusServiceWatcher>
 #include <QDBusVariant>
+#include <QSet>
+#include <QTimer>
 #include <QVariantList>
 #include <QVariantMap>
 
@@ -14,7 +18,9 @@
 #include "uploader.h"
 #include "wificollector.h"
 
-class Service : public QObject
+class NetworkManager;
+
+class Service : public QObject, protected QDBusContext
 {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.stumblefish.Collector")
@@ -27,12 +33,18 @@ public Q_SLOTS:
     QVariantMap settings() const;
     QVariantList reports(int limit) const;
     QVariantMap report(int id) const;
+    QVariantMap mapSummary() const;
+    QVariantList mapCells(double minLatitude, double minLongitude,
+                          double maxLatitude, double maxLongitude, int zoom) const;
     void setSetting(const QString &key, const QDBusVariant &value);
     void collectNow();
     void uploadPending();
+    void appOpened();
+    void appClosed();
     void retryReport(int reportId);
     void deleteReport(int reportId);
     void clearPendingReports();
+    int pruneReports();
 
 Q_SIGNALS:
     void statusChanged(const QVariantMap &status);
@@ -46,12 +58,27 @@ private Q_SLOTS:
     void positionFixReceived(const PositionFix &fix);
     void storageChanged();
     void uploaderFinished(bool success, const QString &message);
+    void autoUploadDueReports();
+    void scheduleAutoUpload();
+    void pruneDueReports();
+    void emitStatus();
+    void clientServiceUnregistered(const QString &serviceName);
+    void quitForAppLifecycle();
 
 private:
     bool anySourceEnabled() const;
+    bool autoUploadNetworkAllowed(QString *reason = 0) const;
+    bool collectionAllowed() const;
+    QString effectiveMode() const;
+    QString collectionStateMessage() const;
+    bool positionShouldBeActive() const;
+    void syncUserServiceEnabled() const;
     bool collectReport(const PositionFix &fix, const QString &reason);
     bool isDuplicateReport(const Report &report) const;
-    void emitStatus();
+    void addAppClient(const QString &serviceName);
+    void removeAppClient(const QString &serviceName);
+    void maybeQuitForAppLifecycle();
+    int pruneReportsWithRetention(bool manual);
 
     Settings m_settings;
     Storage m_storage;
@@ -59,8 +86,15 @@ private:
     WifiCollector m_wifi;
     CellCollector m_cell;
     BleScanner m_ble;
+    NetworkManager *m_networkManager;
     Uploader m_uploader;
+    QDBusServiceWatcher m_clientWatcher;
+    QTimer m_autoUploadTimer;
+    QTimer m_pruneTimer;
+    QTimer m_lifecycleQuitTimer;
+    QSet<QString> m_appClients;
     QString m_lastMessage;
+    bool m_quitWhenIdle;
 };
 
 #endif

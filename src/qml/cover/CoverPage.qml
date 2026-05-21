@@ -10,6 +10,17 @@ CoverBackground {
         return 0
     }
 
+    Image {
+        anchors.centerIn: parent
+        width: parent.width * 2.4
+        height: width
+        source: "../../icons/motorcycle-fish.png"
+        fillMode: Image.PreserveAspectFit
+        opacity: 0.08
+        rotation: -8
+        smooth: true
+    }
+
     Column {
         anchors {
             left: parent.left
@@ -36,6 +47,11 @@ CoverBackground {
     }
 
     CoverActionList {
+        CoverAction {
+            iconSource: "image://theme/icon-cover-location"
+            onTriggered: stumblefish.collectNow()
+        }
+
         CoverAction {
             iconSource: "image://theme/icon-cover-sync"
             onTriggered: stumblefish.uploadPending()

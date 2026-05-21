@@ -22,6 +22,7 @@ public:
 
 public Q_SLOTS:
     void uploadPending();
+    void uploadAutomatically();
     void retryReport(int reportId);
 
 Q_SIGNALS:
@@ -31,6 +32,7 @@ private Q_SLOTS:
     void replyFinished();
 
 private:
+    void uploadPending(int maxRetryCount);
     QByteArray buildPayload(const QList<Report> &reports) const;
 
     Storage *m_storage;

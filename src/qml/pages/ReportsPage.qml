@@ -32,6 +32,10 @@ Page {
 
         PullDownMenu {
             MenuItem {
+                text: "View map"
+                onClicked: pageStack.push(Qt.resolvedUrl("MapPage.qml"))
+            }
+            MenuItem {
                 text: "Clear pending"
                 enabled: pendingUploadCount() > 0 && !stumblefish.busy
                 onClicked: remorse.execute("Clearing pending reports", function() {

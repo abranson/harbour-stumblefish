@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QSqlDatabase>
+#include <QVariantList>
 #include <QVariantMap>
 
 #include "observations.h"
@@ -22,11 +23,15 @@ public:
     QList<Report> recentReports(int limit) const;
     QList<Report> unuploadedReports(int limit) const;
     Report report(int id) const;
-    QList<Report> uploadCandidates(int limit) const;
+    QList<Report> uploadCandidates(int limit, int maxRetryCount = -1) const;
     qint64 lastReportTimestamp() const;
+    QVariantMap mapSummary() const;
+    QVariantList mapCells(double minLatitude, double minLongitude,
+                          double maxLatitude, double maxLongitude, int zoom) const;
     QVariantMap counts() const;
     bool deleteReport(int id);
     int clearPendingReports();
+    int pruneReportsOlderThan(qint64 cutoffMs);
 
     bool markUploading(const QList<int> &ids);
     bool markUploaded(const QList<int> &ids);

@@ -17,7 +17,15 @@ public:
     bool cellEnabled() const;
     bool bleEnabled() const;
     bool autoUploadEnabled() const;
+    bool uploadOnNonWifi() const;
+    bool allowBackgroundDaemon() const;
     QString endpoint() const;
+    QString mapTileUrlTemplate() const;
+    int reportRetentionDays() const;
+    qint64 lastPruneMs() const;
+    void setLastPruneMs(qint64 timestampMs);
+    qint64 lastAutoUploadMs() const;
+    void setLastAutoUploadMs(qint64 timestampMs);
 
     QVariantMap toMap() const;
 

@@ -112,9 +112,8 @@ Page {
             Repeater {
                 model: field("wifi", [])
                 delegate: DetailItem {
-                    label: itemField(modelData, "ssid", "") || itemField(modelData, "macAddress", "")
-                    value: itemField(modelData, "macAddress", "")
-                           + "  " + itemField(modelData, "signalStrength", "")
+                    label: itemField(modelData, "macAddress", "")
+                    value: itemField(modelData, "signalStrength", "")
                 }
             }
 

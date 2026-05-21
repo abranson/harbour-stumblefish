@@ -1,5 +1,5 @@
 Name:       harbour-stumblefish
-Summary:    BeaconDB collector for Sailfish OS
+Summary:    Location report collector for Sailfish OS
 Version:    0.1.0
 Release:    2
 License:    MIT
@@ -18,13 +18,12 @@ BuildRequires:  pkgconfig(connman-qt5)
 BuildRequires:  pkgconfig(qofonoext)
 BuildRequires:  pkgconfig(sailfishapp)
 BuildRequires:  desktop-file-utils
-BuildRequires:  librsvg-tools
 Requires:       sailfishsilica-qt5 >= 0.10.9
 
 %description
 Stumblefish collects opt-in Wi-Fi, cell tower, and Bluetooth beacon
 observations with a position fix, stores the reports locally, and can submit
-them to a configurable Geosubmit endpoint such as BeaconDB.
+them to a configurable Geosubmit endpoint. BeaconDB is the default endpoint.
 
 %prep
 %autosetup
@@ -43,9 +42,8 @@ desktop-file-install --delete-original \
 for size in 86 108 128 172; do
     icon_dir="%{buildroot}%{_datadir}/icons/hicolor/${size}x${size}/apps"
     mkdir -p "${icon_dir}"
-    rsvg-convert -w ${size} -h ${size} \
-        -o "${icon_dir}/%{name}.png" \
-        src/icons/%{name}.svg
+    install -m 644 -p "src/icons/${size}x${size}/apps/%{name}.png" \
+        "${icon_dir}/%{name}.png"
 done
 
 %pre
@@ -55,8 +53,6 @@ fi
 
 %post
 systemctl-user daemon-reload || true
-systemctl-user enable %{name}d || true
-systemctl-user start %{name}d || true
 
 %preun
 if [ "$1" -eq 0 ]; then

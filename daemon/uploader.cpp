@@ -15,6 +15,8 @@
 
 namespace {
 
+const int AutomaticMaxRetries = 5;
+
 int age(qint64 reportTimestamp, qint64 seenTimestamp)
 {
     const qint64 value = reportTimestamp - seenTimestamp;
@@ -42,12 +44,22 @@ bool Uploader::uploading() const
 
 void Uploader::uploadPending()
 {
+    uploadPending(-1);
+}
+
+void Uploader::uploadAutomatically()
+{
+    uploadPending(AutomaticMaxRetries);
+}
+
+void Uploader::uploadPending(int maxRetryCount)
+{
     if (m_reply) {
         emit uploadFinished(false, QStringLiteral("Upload already in progress"));
         return;
     }
 
-    const QList<Report> reports = m_storage->uploadCandidates(950);
+    const QList<Report> reports = m_storage->uploadCandidates(950, maxRetryCount);
     if (reports.isEmpty()) {
         emit uploadFinished(true, QStringLiteral("No pending reports"));
         return;
@@ -129,9 +141,6 @@ QByteArray Uploader::buildPayload(const QList<Report> &reports) const
         foreach (const WifiObservation &wifi, report.wifi) {
             QJsonObject object;
             object.insert(QStringLiteral("macAddress"), wifi.macAddress);
-            if (!wifi.ssid.isEmpty()) {
-                object.insert(QStringLiteral("ssid"), wifi.ssid);
-            }
             if (wifi.frequency > 0) {
                 object.insert(QStringLiteral("frequency"), wifi.frequency);
             }

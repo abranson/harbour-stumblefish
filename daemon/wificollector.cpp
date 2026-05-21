@@ -53,7 +53,12 @@ QList<WifiObservation> WifiCollector::observations() const
     QSet<QString> seen;
     QVector<NetworkService *> services = m_manager->getServices(QStringLiteral("wifi"));
     foreach (NetworkService *service, services) {
-        if (!service || service->hidden() || service->name().endsWith(QStringLiteral("_nomap"))) {
+        if (!service || service->hidden()) {
+            continue;
+        }
+
+        const QString ssid = service->name().trimmed();
+        if (ssid.isEmpty() || ssid.endsWith(QStringLiteral("_nomap"), Qt::CaseInsensitive)) {
             continue;
         }
 
@@ -64,7 +69,6 @@ QList<WifiObservation> WifiCollector::observations() const
 
         WifiObservation observation;
         observation.macAddress = bssid;
-        observation.ssid = service->name();
         observation.frequency = service->frequency();
         observation.signalStrength = service->strength();
         observation.seenMs = now;
