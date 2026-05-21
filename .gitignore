@@ -11,3 +11,9 @@
 /daemon/harbour-stumblefishd
 /daemon/*.o
 /daemon/moc_*.cpp
+/tests/Makefile
+/tests/tst_uploaduseragent
+/tests/*.o
+/tests/moc_*.cpp
+/tests/*.moc
+/tests/target_wrapper.sh

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 Name:       harbour-stumblefish
 Summary:    Location report collector for Sailfish OS
 Version:    0.1.0
@@ -14,6 +15,7 @@ BuildRequires:  pkgconfig(Qt5Positioning)
 BuildRequires:  pkgconfig(Qt5Qml)
 BuildRequires:  pkgconfig(Qt5Quick)
 BuildRequires:  pkgconfig(Qt5Sql)
+BuildRequires:  pkgconfig(Qt5Test)
 BuildRequires:  pkgconfig(connman-qt5)
 BuildRequires:  pkgconfig(qofonoext)
 BuildRequires:  pkgconfig(sailfishapp)
@@ -45,6 +47,9 @@ for size in 86 108 128 172; do
     install -m 644 -p "src/icons/${size}x${size}/apps/%{name}.png" \
         "${icon_dir}/%{name}.png"
 done
+
+%check
+%make_build check
 
 %pre
 if [ "$1" -gt 1 ]; then

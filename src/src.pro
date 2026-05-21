@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 TARGET = harbour-stumblefish
 
 CONFIG += c++11 link_pkgconfig

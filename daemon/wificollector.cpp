@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "wificollector.h"
 
 #include <QDateTime>

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "service.h"
 
 #include "constants.h"

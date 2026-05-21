@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #ifndef STUMBLEFISH_GEOCLUEPOSITION_H
 #define STUMBLEFISH_GEOCLUEPOSITION_H
 
@@ -75,6 +76,7 @@ private:
     int m_satellitesInUse;
     int m_satellitesVisible;
     qint64 m_lastSatelliteMs;
+    qint64 m_lastActiveGnssFixMs;
 };
 
 Q_DECLARE_METATYPE(GeoclueAccuracy)

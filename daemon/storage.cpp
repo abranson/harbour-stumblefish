@@ -1,11 +1,12 @@
+// SPDX-License-Identifier: MIT
 #include "storage.h"
 
 #include <QDir>
 #include <QDateTime>
-#include <QHash>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QPointF>
+#include <QSet>
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QStandardPaths>
@@ -17,6 +18,8 @@ namespace {
 const double Pi = 3.14159265358979323846;
 const double MaxMercatorLatitude = 85.05112878;
 const double HexRadiusPixels = 22.0;
+const int MapAggregationZooms[] = { 4, 7, 10, 12, 14, 16, 18 };
+const int MapAggregationZoomCount = sizeof(MapAggregationZooms) / sizeof(MapAggregationZooms[0]);
 
 struct HexCoord
 {
@@ -24,28 +27,27 @@ struct HexCoord
     int r;
 };
 
-struct MapCellAccumulator
+struct MapCellKey
 {
-    MapCellAccumulator()
-        : count(0)
-        , pendingCount(0)
-        , failedCount(0)
-        , uploadedCount(0)
-        , uploadingCount(0)
-        , latestTimestampMs(0)
-        , q(0)
-        , r(0)
+    int zoom;
+    int q;
+    int r;
+};
+
+struct StatusCounts
+{
+    StatusCounts()
+        : pending(0)
+        , failed(0)
+        , uploaded(0)
+        , uploading(0)
     {
     }
 
-    int count;
-    int pendingCount;
-    int failedCount;
-    int uploadedCount;
-    int uploadingCount;
-    qint64 latestTimestampMs;
-    int q;
-    int r;
+    int pending;
+    int failed;
+    int uploaded;
+    int uploading;
 };
 
 QString databasePath()
@@ -147,6 +149,21 @@ double worldSizeForZoom(int zoom)
     return 256.0 * qPow(2.0, qBound(0, zoom, 20));
 }
 
+int aggregationZoomForMapZoom(int zoom)
+{
+    const int bounded = qBound(1, zoom, 19);
+    int best = MapAggregationZooms[0];
+    int bestDistance = qAbs(bounded - best);
+    for (int i = 1; i < MapAggregationZoomCount; ++i) {
+        const int distance = qAbs(bounded - MapAggregationZooms[i]);
+        if (distance < bestDistance) {
+            best = MapAggregationZooms[i];
+            bestDistance = distance;
+        }
+    }
+    return best;
+}
+
 QPointF latLonToPixel(double latitude, double longitude, int zoom)
 {
     const double worldSize = worldSizeForZoom(zoom);
@@ -206,32 +223,46 @@ QPointF hexToPixel(const HexCoord &coord)
                    HexRadiusPixels * 3.0 / 2.0 * coord.r);
 }
 
-void addStatus(MapCellAccumulator *cell, const QString &status)
+QString keyString(const MapCellKey &key)
 {
-    if (status == QStringLiteral("pending")) {
-        ++cell->pendingCount;
-    } else if (status == QStringLiteral("failed")) {
-        ++cell->failedCount;
-    } else if (status == QStringLiteral("uploaded")) {
-        ++cell->uploadedCount;
-    } else if (status == QStringLiteral("uploading")) {
-        ++cell->uploadingCount;
-    }
+    return QString::number(key.zoom) + QStringLiteral(":")
+            + QString::number(key.q) + QStringLiteral(":")
+            + QString::number(key.r);
 }
 
-void addMapRow(QHash<QString, MapCellAccumulator> *cells, double latitude, double longitude,
-               const QString &status, qint64 timestampMs, int zoom)
+StatusCounts countsForStatus(const QString &status, int amount = 1)
 {
-    const HexCoord coord = pixelToHex(latLonToPixel(latitude, longitude, zoom));
-    const QString key = QString::number(coord.q) + QStringLiteral(":") + QString::number(coord.r);
+    StatusCounts counts;
+    if (status == QStringLiteral("pending")) {
+        counts.pending = amount;
+    } else if (status == QStringLiteral("failed")) {
+        counts.failed = amount;
+    } else if (status == QStringLiteral("uploaded")) {
+        counts.uploaded = amount;
+    } else if (status == QStringLiteral("uploading")) {
+        counts.uploading = amount;
+    }
+    return counts;
+}
 
-    MapCellAccumulator cell = cells->value(key);
-    cell.q = coord.q;
-    cell.r = coord.r;
-    ++cell.count;
-    addStatus(&cell, status);
-    cell.latestTimestampMs = qMax(cell.latestTimestampMs, timestampMs);
-    cells->insert(key, cell);
+MapCellKey mapCellKeyForReport(const Report &report, int zoom)
+{
+    const HexCoord coord = pixelToHex(latLonToPixel(report.position.latitude,
+                                                    report.position.longitude,
+                                                    zoom));
+    MapCellKey key;
+    key.zoom = zoom;
+    key.q = coord.q;
+    key.r = coord.r;
+    return key;
+}
+
+QPointF centerForMapCell(const MapCellKey &key)
+{
+    HexCoord coord;
+    coord.q = key.q;
+    coord.r = key.r;
+    return pixelToLatLon(hexToPixel(coord).x(), hexToPixel(coord).y(), key.zoom);
 }
 
 QVariantMap latLonMap(double latitude, double longitude)
@@ -256,32 +287,342 @@ QVariantList polygonForHex(const HexCoord &coord, int zoom)
     return polygon;
 }
 
-QVariantList cellsToVariantList(const QHash<QString, MapCellAccumulator> &cells, int zoom)
+QVariantMap mapCellToVariantMap(const MapCellKey &key, double centerLatitude,
+                                double centerLongitude, int count, int pendingCount,
+                                int failedCount, int uploadedCount, int uploadingCount,
+                                qint64 latestTimestampMs)
 {
-    QVariantList list;
-    QHash<QString, MapCellAccumulator>::const_iterator it = cells.constBegin();
-    for (; it != cells.constEnd(); ++it) {
-        const MapCellAccumulator cell = it.value();
-        HexCoord coord;
-        coord.q = cell.q;
-        coord.r = cell.r;
+    HexCoord coord;
+    coord.q = key.q;
+    coord.r = key.r;
 
-        const QPointF center = pixelToLatLon(hexToPixel(coord).x(), hexToPixel(coord).y(), zoom);
-        QVariantMap map;
-        map.insert(QStringLiteral("id"), it.key());
-        map.insert(QStringLiteral("latitude"), center.x());
-        map.insert(QStringLiteral("longitude"), center.y());
-        map.insert(QStringLiteral("count"), cell.count);
-        map.insert(QStringLiteral("pendingCount"), cell.pendingCount);
-        map.insert(QStringLiteral("failedCount"), cell.failedCount);
-        map.insert(QStringLiteral("uploadedCount"), cell.uploadedCount);
-        map.insert(QStringLiteral("uploadingCount"), cell.uploadingCount);
-        map.insert(QStringLiteral("latestTimestampMs"), cell.latestTimestampMs);
-        map.insert(QStringLiteral("heat"), qMin(1.0, 0.2 + cell.count / 12.0));
-        map.insert(QStringLiteral("polygon"), polygonForHex(coord, zoom));
-        list.append(map);
+    QVariantMap map;
+    map.insert(QStringLiteral("id"), keyString(key));
+    map.insert(QStringLiteral("latitude"), centerLatitude);
+    map.insert(QStringLiteral("longitude"), centerLongitude);
+    map.insert(QStringLiteral("count"), count);
+    map.insert(QStringLiteral("pendingCount"), pendingCount);
+    map.insert(QStringLiteral("failedCount"), failedCount);
+    map.insert(QStringLiteral("uploadedCount"), uploadedCount);
+    map.insert(QStringLiteral("uploadingCount"), uploadingCount);
+    map.insert(QStringLiteral("latestTimestampMs"), latestTimestampMs);
+    map.insert(QStringLiteral("heat"), qMin(1.0, 0.2 + count / 12.0));
+    map.insert(QStringLiteral("polygon"), polygonForHex(coord, key.zoom));
+    return map;
+}
+
+bool setQueryError(QSqlQuery *query, QString *error)
+{
+    if (error) {
+        *error = query->lastError().text();
     }
-    return list;
+    return false;
+}
+
+bool setDatabaseError(const QSqlDatabase &db, QString *error)
+{
+    if (error) {
+        *error = db.lastError().text();
+    }
+    return false;
+}
+
+bool execChecked(QSqlDatabase db, const QString &sql, QString *error)
+{
+    QSqlQuery query(db);
+    if (!query.exec(sql)) {
+        return setQueryError(&query, error);
+    }
+    return true;
+}
+
+bool scalarCount(QSqlDatabase db, const QString &sql, qint64 *count, QString *error)
+{
+    QSqlQuery query(db);
+    if (!query.exec(sql)) {
+        return setQueryError(&query, error);
+    }
+    if (!query.next()) {
+        *count = 0;
+        return true;
+    }
+    *count = query.value(0).toLongLong();
+    return true;
+}
+
+QList<MapCellKey> mapCellsForReport(QSqlDatabase db, int reportId, bool *ok, QString *error)
+{
+    if (ok) {
+        *ok = false;
+    }
+
+    QList<MapCellKey> keys;
+    QSqlQuery query(db);
+    query.prepare(QStringLiteral("select zoom, q, r from map_report_cells where report_id = ?"));
+    query.addBindValue(reportId);
+    if (!query.exec()) {
+        setQueryError(&query, error);
+        return keys;
+    }
+
+    while (query.next()) {
+        MapCellKey key;
+        key.zoom = query.value(0).toInt();
+        key.q = query.value(1).toInt();
+        key.r = query.value(2).toInt();
+        keys.append(key);
+    }
+    if (ok) {
+        *ok = true;
+    }
+    return keys;
+}
+
+bool insertMapCellMembership(QSqlDatabase db, int reportId, const MapCellKey &key, QString *error)
+{
+    QSqlQuery query(db);
+    query.prepare(QStringLiteral("insert into map_report_cells (report_id, zoom, q, r) "
+                                 "values (?, ?, ?, ?)"));
+    query.addBindValue(reportId);
+    query.addBindValue(key.zoom);
+    query.addBindValue(key.q);
+    query.addBindValue(key.r);
+    if (!query.exec()) {
+        return setQueryError(&query, error);
+    }
+    return true;
+}
+
+bool addReportToMapCell(QSqlDatabase db, const Report &report, const MapCellKey &key, QString *error)
+{
+    const QPointF center = centerForMapCell(key);
+    QSqlQuery insert(db);
+    insert.prepare(QStringLiteral("insert or ignore into map_cells "
+                                  "(zoom, q, r, center_latitude, center_longitude, count, "
+                                  "pending_count, failed_count, uploaded_count, uploading_count, latest_timestamp_ms) "
+                                  "values (?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0)"));
+    insert.addBindValue(key.zoom);
+    insert.addBindValue(key.q);
+    insert.addBindValue(key.r);
+    insert.addBindValue(center.x());
+    insert.addBindValue(center.y());
+    if (!insert.exec()) {
+        return setQueryError(&insert, error);
+    }
+
+    const StatusCounts counts = countsForStatus(report.uploadStatus.isEmpty()
+                                                ? QStringLiteral("pending")
+                                                : report.uploadStatus);
+    QSqlQuery update(db);
+    update.prepare(QStringLiteral("update map_cells set "
+                                  "count = count + 1, "
+                                  "pending_count = pending_count + ?, "
+                                  "failed_count = failed_count + ?, "
+                                  "uploaded_count = uploaded_count + ?, "
+                                  "uploading_count = uploading_count + ?, "
+                                  "latest_timestamp_ms = max(latest_timestamp_ms, ?) "
+                                  "where zoom = ? and q = ? and r = ?"));
+    update.addBindValue(counts.pending);
+    update.addBindValue(counts.failed);
+    update.addBindValue(counts.uploaded);
+    update.addBindValue(counts.uploading);
+    update.addBindValue(report.timestampMs);
+    update.addBindValue(key.zoom);
+    update.addBindValue(key.q);
+    update.addBindValue(key.r);
+    if (!update.exec()) {
+        return setQueryError(&update, error);
+    }
+    return true;
+}
+
+bool addReportToMapCells(QSqlDatabase db, const Report &report, QString *error)
+{
+    for (int i = 0; i < MapAggregationZoomCount; ++i) {
+        const MapCellKey key = mapCellKeyForReport(report, MapAggregationZooms[i]);
+        if (!insertMapCellMembership(db, report.id, key, error)) {
+            return false;
+        }
+        if (!addReportToMapCell(db, report, key, error)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool recomputeMapCell(QSqlDatabase db, const MapCellKey &key, QString *error)
+{
+    QSqlQuery query(db);
+    query.prepare(QStringLiteral("select r.upload_status, r.timestamp_ms "
+                                 "from map_report_cells c "
+                                 "join reports r on r.id = c.report_id "
+                                 "where c.zoom = ? and c.q = ? and c.r = ?"));
+    query.addBindValue(key.zoom);
+    query.addBindValue(key.q);
+    query.addBindValue(key.r);
+    if (!query.exec()) {
+        return setQueryError(&query, error);
+    }
+
+    int count = 0;
+    StatusCounts counts;
+    qint64 latest = 0;
+    while (query.next()) {
+        ++count;
+        const StatusCounts statusCounts = countsForStatus(query.value(0).toString());
+        counts.pending += statusCounts.pending;
+        counts.failed += statusCounts.failed;
+        counts.uploaded += statusCounts.uploaded;
+        counts.uploading += statusCounts.uploading;
+        latest = qMax(latest, query.value(1).toLongLong());
+    }
+
+    if (count == 0) {
+        QSqlQuery remove(db);
+        remove.prepare(QStringLiteral("delete from map_cells where zoom = ? and q = ? and r = ?"));
+        remove.addBindValue(key.zoom);
+        remove.addBindValue(key.q);
+        remove.addBindValue(key.r);
+        if (!remove.exec()) {
+            return setQueryError(&remove, error);
+        }
+        return true;
+    }
+
+    QSqlQuery update(db);
+    update.prepare(QStringLiteral("update map_cells set count = ?, pending_count = ?, "
+                                  "failed_count = ?, uploaded_count = ?, uploading_count = ?, "
+                                  "latest_timestamp_ms = ? where zoom = ? and q = ? and r = ?"));
+    update.addBindValue(count);
+    update.addBindValue(counts.pending);
+    update.addBindValue(counts.failed);
+    update.addBindValue(counts.uploaded);
+    update.addBindValue(counts.uploading);
+    update.addBindValue(latest);
+    update.addBindValue(key.zoom);
+    update.addBindValue(key.q);
+    update.addBindValue(key.r);
+    if (!update.exec()) {
+        return setQueryError(&update, error);
+    }
+    return true;
+}
+
+bool updateMapCellsForStatus(QSqlDatabase db, int reportId, const QString &oldStatus,
+                             const QString &newStatus, QString *error)
+{
+    if (oldStatus == newStatus) {
+        return true;
+    }
+
+    const StatusCounts remove = countsForStatus(oldStatus, -1);
+    const StatusCounts add = countsForStatus(newStatus, 1);
+    bool ok = false;
+    const QList<MapCellKey> keys = mapCellsForReport(db, reportId, &ok, error);
+    if (!ok) {
+        return false;
+    }
+    foreach (const MapCellKey &key, keys) {
+        QSqlQuery update(db);
+        update.prepare(QStringLiteral("update map_cells set "
+                                      "pending_count = pending_count + ?, "
+                                      "failed_count = failed_count + ?, "
+                                      "uploaded_count = uploaded_count + ?, "
+                                      "uploading_count = uploading_count + ? "
+                                      "where zoom = ? and q = ? and r = ?"));
+        update.addBindValue(remove.pending + add.pending);
+        update.addBindValue(remove.failed + add.failed);
+        update.addBindValue(remove.uploaded + add.uploaded);
+        update.addBindValue(remove.uploading + add.uploading);
+        update.addBindValue(key.zoom);
+        update.addBindValue(key.q);
+        update.addBindValue(key.r);
+        if (!update.exec()) {
+            return setQueryError(&update, error);
+        }
+    }
+    return true;
+}
+
+bool rebuildMapCells(QSqlDatabase db, QString *error)
+{
+    if (!db.transaction()) {
+        return setDatabaseError(db, error);
+    }
+
+    if (!execChecked(db, QStringLiteral("delete from map_report_cells"), error)
+            || !execChecked(db, QStringLiteral("delete from map_cells"), error)) {
+        db.rollback();
+        return false;
+    }
+
+    QSqlQuery query(db);
+    if (!query.exec(QStringLiteral("select id, timestamp_ms, latitude, longitude, upload_status "
+                                   "from reports order by id"))) {
+        setQueryError(&query, error);
+        db.rollback();
+        return false;
+    }
+
+    while (query.next()) {
+        Report report;
+        report.id = query.value(0).toInt();
+        report.timestampMs = query.value(1).toLongLong();
+        report.position.valid = true;
+        report.position.timestampMs = report.timestampMs;
+        report.position.latitude = query.value(2).toDouble();
+        report.position.longitude = query.value(3).toDouble();
+        report.uploadStatus = query.value(4).toString();
+        if (!addReportToMapCells(db, report, error)) {
+            db.rollback();
+            return false;
+        }
+    }
+
+    if (!db.commit()) {
+        return setDatabaseError(db, error);
+    }
+    return true;
+}
+
+bool ensureMapCellsCurrent(QSqlDatabase db, QString *error)
+{
+    qint64 reportCount = 0;
+    qint64 membershipCount = 0;
+    if (!scalarCount(db, QStringLiteral("select count(*) from reports"), &reportCount, error)
+            || !scalarCount(db, QStringLiteral("select count(*) from map_report_cells"),
+                            &membershipCount, error)) {
+        return false;
+    }
+
+    if (membershipCount != reportCount * MapAggregationZoomCount) {
+        return rebuildMapCells(db, error);
+    }
+    return true;
+}
+
+bool recoverInterruptedUploads(QSqlDatabase db, bool *changed, QString *error)
+{
+    QSqlQuery count(db);
+    if (!count.exec(QStringLiteral("select count(*) from reports where upload_status = 'uploading'"))) {
+        return setQueryError(&count, error);
+    }
+    const bool hasRows = count.next() && count.value(0).toInt() > 0;
+    if (changed) {
+        *changed = hasRows;
+    }
+    if (!hasRows) {
+        return true;
+    }
+
+    QSqlQuery update(db);
+    if (!update.exec(QStringLiteral("update reports set upload_status = 'failed', "
+                                    "retry_count = retry_count + 1, "
+                                    "last_error = 'Upload interrupted before completion' "
+                                    "where upload_status = 'uploading'"))) {
+        return setQueryError(&update, error);
+    }
+    return true;
 }
 
 }
@@ -375,12 +716,46 @@ bool Storage::migrate()
                                "service_data text,"
                                "seen_ms integer not null"
                                ")"))
+        && exec(QStringLiteral("create table if not exists map_report_cells ("
+                               "report_id integer not null,"
+                               "zoom integer not null,"
+                               "q integer not null,"
+                               "r integer not null,"
+                               "primary key (report_id, zoom)"
+                               ")"))
+        && exec(QStringLiteral("create table if not exists map_cells ("
+                               "zoom integer not null,"
+                               "q integer not null,"
+                               "r integer not null,"
+                               "center_latitude real not null,"
+                               "center_longitude real not null,"
+                               "count integer not null default 0,"
+                               "pending_count integer not null default 0,"
+                               "failed_count integer not null default 0,"
+                               "uploaded_count integer not null default 0,"
+                               "uploading_count integer not null default 0,"
+                               "latest_timestamp_ms integer not null default 0,"
+                               "primary key (zoom, q, r)"
+                               ")"))
         && exec(QStringLiteral("create index if not exists reports_latitude_longitude_idx "
                                "on reports (latitude, longitude)"))
         && exec(QStringLiteral("create index if not exists reports_timestamp_idx "
                                "on reports (timestamp_ms)"))
+        && exec(QStringLiteral("create index if not exists map_report_cells_cell_idx "
+                               "on map_report_cells (zoom, q, r)"))
+        && exec(QStringLiteral("create index if not exists map_cells_center_idx "
+                               "on map_cells (zoom, center_latitude, center_longitude)"))
         && exec(QStringLiteral("update wifi_observations set ssid = '' "
-                               "where ssid is not null and ssid != ''"));
+                               "where ssid is not null and ssid != ''"))
+        && [this]() {
+            bool uploadsRecovered = false;
+            if (!recoverInterruptedUploads(m_db, &uploadsRecovered, &m_lastError)) {
+                return false;
+            }
+            return uploadsRecovered
+                    ? rebuildMapCells(m_db, &m_lastError)
+                    : ensureMapCellsCurrent(m_db, &m_lastError);
+        }();
 }
 
 bool Storage::exec(const QString &sql) const
@@ -395,6 +770,11 @@ bool Storage::exec(const QString &sql) const
 
 int Storage::addReport(const Report &report)
 {
+    if (!m_db.transaction()) {
+        m_lastError = m_db.lastError().text();
+        return 0;
+    }
+
     QSqlQuery query(m_db);
     query.prepare(QStringLiteral("insert into reports "
                                  "(timestamp_ms, latitude, longitude, altitude, accuracy, mode, "
@@ -412,6 +792,7 @@ int Storage::addReport(const Report &report)
     query.addBindValue(report.endpoint);
     if (!query.exec()) {
         m_lastError = query.lastError().text();
+        m_db.rollback();
         return 0;
     }
 
@@ -429,6 +810,8 @@ int Storage::addReport(const Report &report)
         insert.addBindValue(wifi.seenMs);
         if (!insert.exec()) {
             m_lastError = insert.lastError().text();
+            m_db.rollback();
+            return 0;
         }
     }
 
@@ -449,6 +832,8 @@ int Storage::addReport(const Report &report)
         insert.addBindValue(cell.seenMs);
         if (!insert.exec()) {
             m_lastError = insert.lastError().text();
+            m_db.rollback();
+            return 0;
         }
     }
 
@@ -473,7 +858,22 @@ int Storage::addReport(const Report &report)
         insert.addBindValue(ble.seenMs);
         if (!insert.exec()) {
             m_lastError = insert.lastError().text();
+            m_db.rollback();
+            return 0;
         }
+    }
+
+    Report storedReport = report;
+    storedReport.id = reportId;
+    storedReport.uploadStatus = QStringLiteral("pending");
+    if (!addReportToMapCells(m_db, storedReport, &m_lastError)) {
+        m_db.rollback();
+        return 0;
+    }
+
+    if (!m_db.commit()) {
+        m_lastError = m_db.lastError().text();
+        return 0;
     }
 
     emit changed();
@@ -696,12 +1096,16 @@ QVariantList Storage::mapCells(double minLatitude, double minLongitude,
     const double boundedMinLongitude = normalizedLongitude(minLongitude);
     const double boundedMaxLongitude = normalizedLongitude(maxLongitude);
     const bool crossesAntimeridian = boundedMinLongitude > boundedMaxLongitude;
+    const int aggregateZoom = aggregationZoomForMapZoom(zoom);
 
     QSqlQuery query(m_db);
-    query.prepare(QStringLiteral("select latitude, longitude, upload_status, timestamp_ms from reports "
-                                 "where latitude >= ? and latitude <= ? and "
-                                 "((? = 0 and longitude >= ? and longitude <= ?) "
-                                 "or (? = 1 and (longitude >= ? or longitude <= ?)))"));
+    query.prepare(QStringLiteral("select zoom, q, r, center_latitude, center_longitude, count, "
+                                 "pending_count, failed_count, uploaded_count, uploading_count, "
+                                 "latest_timestamp_ms from map_cells "
+                                 "where zoom = ? and center_latitude >= ? and center_latitude <= ? and "
+                                 "((? = 0 and center_longitude >= ? and center_longitude <= ?) "
+                                 "or (? = 1 and (center_longitude >= ? or center_longitude <= ?)))"));
+    query.addBindValue(aggregateZoom);
     query.addBindValue(boundedMinLatitude);
     query.addBindValue(boundedMaxLatitude);
     query.addBindValue(crossesAntimeridian ? 1 : 0);
@@ -711,19 +1115,29 @@ QVariantList Storage::mapCells(double minLatitude, double minLongitude,
     query.addBindValue(boundedMinLongitude);
     query.addBindValue(boundedMaxLongitude);
 
-    QHash<QString, MapCellAccumulator> cells;
+    QVariantList cells;
     if (!query.exec()) {
         const_cast<Storage *>(this)->m_lastError = query.lastError().text();
         return QVariantList();
     }
 
-    const int boundedZoom = qBound(1, zoom, 19);
     while (query.next()) {
-        addMapRow(&cells, query.value(0).toDouble(), query.value(1).toDouble(),
-                  query.value(2).toString(), query.value(3).toLongLong(), boundedZoom);
+        MapCellKey key;
+        key.zoom = query.value(0).toInt();
+        key.q = query.value(1).toInt();
+        key.r = query.value(2).toInt();
+        cells.append(mapCellToVariantMap(key,
+                                         query.value(3).toDouble(),
+                                         query.value(4).toDouble(),
+                                         query.value(5).toInt(),
+                                         query.value(6).toInt(),
+                                         query.value(7).toInt(),
+                                         query.value(8).toInt(),
+                                         query.value(9).toInt(),
+                                         query.value(10).toLongLong()));
     }
 
-    return cellsToVariantList(cells, boundedZoom);
+    return cells;
 }
 
 QVariantMap Storage::counts() const
@@ -828,7 +1242,30 @@ bool Storage::markPending(int id)
 
 bool Storage::updateStatus(const QList<int> &ids, const QString &status, const QString &error, bool setUploaded)
 {
+    if (ids.isEmpty()) {
+        return true;
+    }
+
+    if (!m_db.transaction()) {
+        m_lastError = m_db.lastError().text();
+        return false;
+    }
+
     foreach (int id, ids) {
+        QString oldStatus;
+        QSqlQuery current(m_db);
+        current.prepare(QStringLiteral("select upload_status from reports where id = ?"));
+        current.addBindValue(id);
+        if (!current.exec()) {
+            m_lastError = current.lastError().text();
+            m_db.rollback();
+            return false;
+        }
+        if (!current.next()) {
+            continue;
+        }
+        oldStatus = current.value(0).toString();
+
         QSqlQuery query(m_db);
         if (status == QStringLiteral("failed")) {
             query.prepare(QStringLiteral("update reports set upload_status = ?, retry_count = retry_count + 1, "
@@ -850,8 +1287,18 @@ bool Storage::updateStatus(const QList<int> &ids, const QString &status, const Q
         }
         if (!query.exec()) {
             m_lastError = query.lastError().text();
+            m_db.rollback();
             return false;
         }
+        if (!updateMapCellsForStatus(m_db, id, oldStatus, status, &m_lastError)) {
+            m_db.rollback();
+            return false;
+        }
+    }
+
+    if (!m_db.commit()) {
+        m_lastError = m_db.lastError().text();
+        return false;
     }
     emit changed();
     return true;
@@ -866,6 +1313,30 @@ bool Storage::deleteReports(const QList<int> &ids)
     if (!m_db.transaction()) {
         m_lastError = m_db.lastError().text();
         return false;
+    }
+
+    QList<MapCellKey> affectedCells;
+    QSet<QString> seenCells;
+    foreach (int id, ids) {
+        QSqlQuery query(m_db);
+        query.prepare(QStringLiteral("select zoom, q, r from map_report_cells where report_id = ?"));
+        query.addBindValue(id);
+        if (!query.exec()) {
+            m_lastError = query.lastError().text();
+            m_db.rollback();
+            return false;
+        }
+        while (query.next()) {
+            MapCellKey key;
+            key.zoom = query.value(0).toInt();
+            key.q = query.value(1).toInt();
+            key.r = query.value(2).toInt();
+            const QString cellId = keyString(key);
+            if (!seenCells.contains(cellId)) {
+                seenCells.insert(cellId);
+                affectedCells.append(key);
+            }
+        }
     }
 
     const QStringList childTables = QStringList()
@@ -892,6 +1363,24 @@ bool Storage::deleteReports(const QList<int> &ids)
         query.addBindValue(id);
         if (!query.exec()) {
             m_lastError = query.lastError().text();
+            m_db.rollback();
+            return false;
+        }
+    }
+
+    foreach (int id, ids) {
+        QSqlQuery query(m_db);
+        query.prepare(QStringLiteral("delete from map_report_cells where report_id = ?"));
+        query.addBindValue(id);
+        if (!query.exec()) {
+            m_lastError = query.lastError().text();
+            m_db.rollback();
+            return false;
+        }
+    }
+
+    foreach (const MapCellKey &key, affectedCells) {
+        if (!recomputeMapCell(m_db, key, &m_lastError)) {
             m_db.rollback();
             return false;
         }

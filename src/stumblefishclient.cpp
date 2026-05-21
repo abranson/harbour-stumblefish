@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "stumblefishclient.h"
 
 #include "constants.h"

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #ifndef STUMBLEFISH_UPLOADER_H
 #define STUMBLEFISH_UPLOADER_H
 

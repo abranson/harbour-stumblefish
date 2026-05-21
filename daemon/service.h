@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #ifndef STUMBLEFISH_SERVICE_H
 #define STUMBLEFISH_SERVICE_H
 

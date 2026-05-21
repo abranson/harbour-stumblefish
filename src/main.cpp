@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include <QGuiApplication>
 #include <QQmlContext>
 #include <QQmlEngine>

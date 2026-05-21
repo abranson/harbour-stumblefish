@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 [D-BUS Service]
 Name=org.stumblefish.Collector
 Exec=/usr/bin/harbour-stumblefishd

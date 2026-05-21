@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "mapnetworkaccessmanagerfactory.h"
 
 #include <QDir>

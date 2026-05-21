@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "blescanner.h"
 
 #include <QDateTime>

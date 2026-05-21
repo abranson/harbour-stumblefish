@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 [Unit]
 Description=Stumblefish location report collector
 After=pre-user-session.target

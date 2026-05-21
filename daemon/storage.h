@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #ifndef STUMBLEFISH_STORAGE_H
 #define STUMBLEFISH_STORAGE_H
 

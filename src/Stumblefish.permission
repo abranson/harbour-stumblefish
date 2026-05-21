@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 # x-sailjail-description = Stumblefish collector daemon
 # x-sailjail-long-description = Communicate with the Stumblefish background collector service
 

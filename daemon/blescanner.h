@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #ifndef STUMBLEFISH_BLESCANNER_H
 #define STUMBLEFISH_BLESCANNER_H
 

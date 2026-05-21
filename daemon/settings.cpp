@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "settings.h"
 
 #include "constants.h"

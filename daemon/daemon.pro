@@ -1,6 +1,10 @@
+# SPDX-License-Identifier: MIT
 TARGET = harbour-stumblefishd
 
 CONFIG += console c++11 link_pkgconfig
+QMAKE_CFLAGS += -fPIE
+QMAKE_CXXFLAGS += -fPIE
+QMAKE_LFLAGS += -pie
 
 QT -= gui
 QT += core dbus network positioning sql
@@ -18,6 +22,7 @@ SOURCES += \
     service.cpp \
     settings.cpp \
     storage.cpp \
+    uploaduseragent.cpp \
     uploader.cpp \
     wificollector.cpp
 
@@ -29,6 +34,7 @@ HEADERS += \
     service.h \
     settings.h \
     storage.h \
+    uploaduseragent.h \
     uploader.h \
     wificollector.h
 

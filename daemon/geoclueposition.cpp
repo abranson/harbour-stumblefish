@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "geoclueposition.h"
 
 #include <QDBusArgument>
@@ -7,6 +8,7 @@
 #include <QDebug>
 #include <QFileInfo>
 #include <QSettings>
+#include <QtGlobal>
 
 namespace {
 
@@ -14,7 +16,7 @@ const char LocationSettingsDir[] = "/var/lib/location";
 const char LocationSettingsFile[] = "/var/lib/location/location.conf";
 const char LocationEnabledKey[] = "location/enabled";
 const qint64 FixFreshMs = 30 * 1000;
-const qint64 GnssFixWindowMs = 5 * 60 * 1000;
+const qint64 GnssFixWindowMs = 30 * 1000;
 
 }
 
@@ -62,6 +64,7 @@ GeocluePosition::GeocluePosition(QObject *parent)
     , m_satellitesInUse(0)
     , m_satellitesVisible(0)
     , m_lastSatelliteMs(0)
+    , m_lastActiveGnssFixMs(0)
 {
     qDBusRegisterMetaType<GeoclueAccuracy>();
     qDBusRegisterMetaType<GeocluePrnList>();
@@ -133,14 +136,22 @@ bool GeocluePosition::locationEnabled() const
 
 bool GeocluePosition::hasGnssFix(qint64 timestampMs) const
 {
-    if (m_satellitesInUse <= 0 || m_lastSatelliteMs <= 0 || timestampMs <= 0) {
+    if (timestampMs <= 0) {
         return false;
     }
 
-    const qint64 delta = timestampMs > m_lastSatelliteMs
-            ? timestampMs - m_lastSatelliteMs
-            : m_lastSatelliteMs - timestampMs;
-    return delta <= GnssFixWindowMs;
+    if (m_lastActiveGnssFixMs > 0) {
+        const qint64 delta = qAbs(timestampMs - m_lastActiveGnssFixMs);
+        if (delta <= GnssFixWindowMs) {
+            return true;
+        }
+    }
+
+    if (m_satellitesInUse <= 0 || m_lastSatelliteMs <= 0) {
+        return false;
+    }
+
+    return qAbs(timestampMs - m_lastSatelliteMs) <= GnssFixWindowMs;
 }
 
 int GeocluePosition::satellitesInUse() const
@@ -188,6 +199,7 @@ void GeocluePosition::positionUpdated(const QGeoPositionInfo &info)
     fix.accuracy = info.hasAttribute(QGeoPositionInfo::HorizontalAccuracy)
             ? info.attribute(QGeoPositionInfo::HorizontalAccuracy)
             : -1.0;
+    m_lastActiveGnssFixMs = fix.timestampMs;
     emitFix(fix);
 }
 
@@ -226,13 +238,14 @@ void GeocluePosition::geoclueSatelliteChanged(int timestamp, int satelliteUsed,
                                               const GeocluePrnList &usedPrn,
                                               const GeoclueSatelliteInfoList &satInfo)
 {
-    Q_UNUSED(timestamp);
     Q_UNUSED(usedPrn);
     Q_UNUSED(satInfo);
 
     m_satellitesInUse = satelliteUsed;
     m_satellitesVisible = satelliteVisible;
-    m_lastSatelliteMs = QDateTime::currentMSecsSinceEpoch();
+    m_lastSatelliteMs = timestamp > 0
+            ? static_cast<qint64>(timestamp) * 1000
+            : QDateTime::currentMSecsSinceEpoch();
     emit statusChanged();
 }
 
@@ -278,6 +291,7 @@ void GeocluePosition::applyActiveState()
         m_lastFix = PositionFix();
         m_satellitesInUse = 0;
         m_lastSatelliteMs = 0;
+        m_lastActiveGnssFixMs = 0;
         m_status = QStringLiteral("location-disabled");
     } else if (m_active) {
         if (!m_updatesStarted) {

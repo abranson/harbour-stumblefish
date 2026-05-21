@@ -1,7 +1,9 @@
+// SPDX-License-Identifier: MIT
 #include "uploader.h"
 
 #include "settings.h"
 #include "storage.h"
+#include "uploaduseragent.h"
 
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -79,7 +81,7 @@ void Uploader::uploadPending(int maxRetryCount)
 
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
-    request.setRawHeader("User-Agent", "harbour-stumblefish/0.1");
+    request.setRawHeader("User-Agent", Stumblefish::uploadUserAgent());
 
     m_reply = m_network->post(request, buildPayload(reports));
     connect(m_reply, SIGNAL(finished()), this, SLOT(replyFinished()));
