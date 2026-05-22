@@ -1,0 +1,190 @@
+name: SailfishOS Build
+
+# This creates a GitHub release on every tag push.
+# It can also publish the RPMs to a repo in the same user/org called 'repo',
+# but only if the 'PUBLISH_REPO_TOKEN' repository secret has been set to a
+# fine-grained Personal Access Token that you've created which allows
+# read/write access to that repo. If either of those things are missing,
+# publishing will be skipped.
+
+on:
+  push:
+    branches: [ "*" ]
+    tags: [ "*" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE: 3.4.0.24
+      ARCHITECTURES: |
+        armv7hl
+        aarch64
+        i486
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Prepare
+        run: |
+          docker pull coderus/sailfishos-platform-sdk:${RELEASE}
+
+      - name: Build Sailfish OS packages
+        run: |
+          set -euo pipefail
+          mkdir .RPMs
+          docker run --rm --privileged \
+            -e RELEASE \
+            -e ARCHITECTURES \
+            -v "$PWD":/share \
+            coderus/sailfishos-platform-sdk:${RELEASE} \
+            bash -c '
+              set -euo pipefail
+              while read -r arch; do
+                [ -n "$arch" ] || continue
+                target="SailfishOS-${RELEASE}-${arch}"
+                echo "::group::Building for $target ($arch)"
+                rm -rf build
+                mkdir -p build
+                cp -r /share/* /share/.git* build
+                cd build
+                mb2 -t "$target" build -d
+                sudo cp -v RPMS/*.rpm /share/.RPMs/
+                ls -la /share/.RPMs
+                echo "::endgroup::"
+              done <<< "$ARCHITECTURES"
+            '
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpms
+          path: .RPMs/*
+          include-hidden-files: true
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+
+    env:
+      # Target repo to host the RPM repository; auto-uses whoever owns this workflow
+      PACKAGE_REPO: ${{ github.repository_owner }}/repo
+
+    steps:
+      - name: Download RPMs
+        uses: actions/download-artifact@v4
+        with:
+          name: rpms
+          path: .
+
+      - name: Create releases
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          files: '*.rpm'
+
+      - name: Check publish configuration
+        id: publish_check
+        env:
+          TOKEN: ${{ secrets.PUBLISH_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${TOKEN:-}" ]; then
+            echo "::warning ::PUBLISH_REPO_TOKEN is not set; skipping RPM repo publish."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          OWNER_REPO="${{ github.repository_owner }}/repo"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${TOKEN}" \
+            https://api.github.com/repos/${OWNER_REPO})
+
+          if [ "$STATUS" -ne 200 ]; then
+            echo "::warning ::Target repo '${OWNER_REPO}' does not exist or is inaccessible; skipping RPM repo publish."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Publish configuration OK for ${OWNER_REPO}"
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout or create repo
+        if: steps.publish_check.outputs.enabled == 'true'
+        env:
+          PUBLISH_TOKEN: ${{ secrets.PUBLISH_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          REPO_URL="https://x-access-token:${PUBLISH_TOKEN}@github.com/${PACKAGE_REPO}.git"
+
+          git config --global init.defaultBranch master
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@users.noreply.github.com"
+
+          if git ls-remote "$REPO_URL" HEAD >/dev/null 2>&1; then
+            echo "Cloning existing repo"
+            git clone "$REPO_URL" publish-repo
+            cd publish-repo
+            if git rev-parse --verify master >/dev/null 2>&1; then
+              git checkout master
+            else
+              echo "Creating master branch"
+              git checkout -b master
+            fi
+          else
+            echo "Creating new repo"
+            mkdir publish-repo
+            cd publish-repo
+            git init -b master
+            git remote add origin "$REPO_URL"
+          fi
+
+      - name: Add new RPMs to repo and push
+        if: steps.publish_check.outputs.enabled == 'true'
+        working-directory: publish-repo
+        run: |
+          set -euo pipefail
+          mkdir -p aarch64 armv7hl i486
+
+          # Move new RPMs into repo
+          for f in ../*.rpm; do
+            [ -e "$f" ] || continue
+            case "$f" in
+              *aarch64.rpm) dest="aarch64" ;;
+              *armv7hl.rpm) dest="armv7hl" ;;
+              *i486.rpm)    dest="i486" ;;
+              *) echo "Skipping unknown arch in $f"; continue ;;
+            esac
+            echo "Moving $f -> $dest/"
+            mv "$f" "$dest/"
+          done
+
+          # Regenerate repo metadata for each arch
+          sudo apt-get update
+          sudo apt-get install -y createrepo-c
+          for archdir in aarch64 armv7hl i486; do
+            echo "Running createrepo_c in $archdir"
+            createrepo_c --update "$archdir"
+          done
+
+          echo "Resulting tree:"
+          ls -R
+
+          # Commit and push
+          git add aarch64 armv7hl i486
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            echo "Committing new RPMs and pushing"
+            git commit -m "Release ${{ github.event.repository.name }} ${{ github.ref_name }}"
+            git push origin master
+          fi
