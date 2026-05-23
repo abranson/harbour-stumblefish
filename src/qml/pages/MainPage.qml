@@ -39,10 +39,6 @@ Page {
                 onClicked: stumblefish.uploadPending()
             }
             MenuItem {
-                text: "Collect now"
-                onClicked: stumblefish.collectNow()
-            }
-            MenuItem {
                 text: "Refresh"
                 onClicked: stumblefish.refresh()
             }
@@ -205,6 +201,7 @@ Page {
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "View map"
+                enabled: count("total") > 0
                 onClicked: pageStack.push(Qt.resolvedUrl("MapPage.qml"))
             }
         }

@@ -21,7 +21,7 @@ void tst_UploadUserAgent::appendsOsReleaseComment()
             "VERSION_ID=\"5.0.0.68\"\n";
 
     QCOMPARE(Stumblefish::uploadUserAgent(osRelease),
-             QByteArray("harbour-stumblefish/0.1.0 (Sailfish OS; 5.0.0.68)"));
+             QByteArray("harbour-stumblefish/0.1.1 (Sailfish OS; 5.0.0.68)"));
 }
 
 void tst_UploadUserAgent::acceptsUnquotedOsReleaseValues()
@@ -31,13 +31,13 @@ void tst_UploadUserAgent::acceptsUnquotedOsReleaseValues()
             "VERSION_ID=5\n";
 
     QCOMPARE(Stumblefish::uploadUserAgent(osRelease),
-             QByteArray("harbour-stumblefish/0.1.0 (Sailfish; 5)"));
+             QByteArray("harbour-stumblefish/0.1.1 (Sailfish; 5)"));
 }
 
 void tst_UploadUserAgent::omitsCommentWhenOsReleaseIsIncomplete()
 {
     QCOMPARE(Stumblefish::uploadUserAgent(QByteArray("NAME=\"Sailfish OS\"\n")),
-             QByteArray("harbour-stumblefish/0.1.0"));
+             QByteArray("harbour-stumblefish/0.1.1"));
 }
 
 void tst_UploadUserAgent::sanitizesCommentDelimiters()
@@ -47,7 +47,7 @@ void tst_UploadUserAgent::sanitizesCommentDelimiters()
             "VERSION_ID=\"5)0\"\n";
 
     QCOMPARE(Stumblefish::uploadUserAgent(osRelease),
-             QByteArray("harbour-stumblefish/0.1.0 (Sailfish OS; 5 0)"));
+             QByteArray("harbour-stumblefish/0.1.1 (Sailfish OS; 5 0)"));
 }
 
 QTEST_APPLESS_MAIN(tst_UploadUserAgent)

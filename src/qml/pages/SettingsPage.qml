@@ -5,6 +5,12 @@ import Sailfish.Silica 1.0
 Page {
     id: page
     property string defaultTileUrl: "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+    property bool endpointLoaded: false
+    property bool tileUrlLoaded: false
+    property bool endpointDirty: false
+    property bool tileUrlDirty: false
+    property string endpointSavedText
+    property string tileUrlSavedText
 
     function retentionIndex(days) {
         var value = Number(days)
@@ -18,6 +24,95 @@ Page {
             return 3
         }
         return 1
+    }
+
+    function hasSetting(name) {
+        var settings = stumblefish.settings
+        return settings && settings[name] !== undefined && settings[name] !== null
+    }
+
+    function settingText(name) {
+        return hasSetting(name) ? String(stumblefish.settings[name]) : ""
+    }
+
+    function refreshUrlFields() {
+        if (hasSetting("endpoint")) {
+            endpointLoaded = true
+            endpointSavedText = settingText("endpoint")
+            if (!endpoint.activeFocus) {
+                endpoint.text = endpointSavedText
+                endpointDirty = false
+            }
+        }
+
+        if (hasSetting("mapTileUrlTemplate")) {
+            tileUrlLoaded = true
+            tileUrlSavedText = settingText("mapTileUrlTemplate")
+            if (!tileUrl.activeFocus) {
+                tileUrl.text = tileUrlSavedText
+                tileUrlDirty = false
+            }
+        }
+    }
+
+    function saveEndpointField(force) {
+        var value = endpoint.text.trim()
+        if (!force && !endpointLoaded && !endpointDirty) {
+            return
+        }
+        if (endpointLoaded && value === settingText("endpoint")) {
+            endpointSavedText = value
+            endpointDirty = false
+            return
+        }
+        if (!force && value === endpointSavedText) {
+            endpointDirty = false
+            return
+        }
+
+        endpointLoaded = true
+        endpointDirty = false
+        endpointSavedText = value
+        stumblefish.setEndpoint(value)
+    }
+
+    function saveTileUrlField(force) {
+        var value = tileUrl.text.trim()
+        if (!force && !tileUrlLoaded && !tileUrlDirty) {
+            return
+        }
+        if (tileUrlLoaded && value === settingText("mapTileUrlTemplate")) {
+            tileUrlSavedText = value
+            tileUrlDirty = false
+            return
+        }
+        if (!force && value === tileUrlSavedText) {
+            tileUrlDirty = false
+            return
+        }
+
+        tileUrlLoaded = true
+        tileUrlDirty = false
+        tileUrlSavedText = value
+        stumblefish.setMapTileUrlTemplate(value)
+    }
+
+    function saveUrlFields() {
+        saveEndpointField()
+        saveTileUrlField()
+    }
+
+    onStatusChanged: {
+        if (status === PageStatus.Deactivating) {
+            saveUrlFields()
+        }
+    }
+
+    Component.onCompleted: refreshUrlFields()
+
+    Connections {
+        target: stumblefish
+        onSettingsChanged: refreshUrlFields()
     }
 
     SilicaFlickable {
@@ -93,19 +188,22 @@ Page {
                 id: endpoint
                 width: parent.width
                 label: "Submission endpoint"
-                text: stumblefish.settings.endpoint || ""
                 inputMethodHints: Qt.ImhUrlCharactersOnly | Qt.ImhNoPredictiveText
                 EnterKey.iconSource: "image://theme/icon-m-enter-accept"
                 EnterKey.onClicked: {
-                    stumblefish.setEndpoint(text)
+                    page.saveEndpointField()
                     focus = false
                 }
-            }
-
-            Button {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "Save endpoint"
-                onClicked: stumblefish.setEndpoint(endpoint.text)
+                onActiveFocusChanged: {
+                    if (!activeFocus) {
+                        page.saveEndpointField()
+                    }
+                }
+                onTextChanged: {
+                    if (activeFocus) {
+                        page.endpointDirty = true
+                    }
+                }
             }
 
             SectionHeader {
@@ -116,19 +214,22 @@ Page {
                 id: tileUrl
                 width: parent.width
                 label: "Tile URL template"
-                text: stumblefish.settings.mapTileUrlTemplate || ""
                 inputMethodHints: Qt.ImhUrlCharactersOnly | Qt.ImhNoPredictiveText
                 EnterKey.iconSource: "image://theme/icon-m-enter-accept"
                 EnterKey.onClicked: {
-                    stumblefish.setMapTileUrlTemplate(text)
+                    page.saveTileUrlField()
                     focus = false
                 }
-            }
-
-            Button {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "Save tile URL"
-                onClicked: stumblefish.setMapTileUrlTemplate(tileUrl.text)
+                onActiveFocusChanged: {
+                    if (!activeFocus) {
+                        page.saveTileUrlField()
+                    }
+                }
+                onTextChanged: {
+                    if (activeFocus) {
+                        page.tileUrlDirty = true
+                    }
+                }
             }
 
             Button {
@@ -136,7 +237,7 @@ Page {
                 text: "Use OSM tiles"
                 onClicked: {
                     tileUrl.text = defaultTileUrl
-                    stumblefish.setMapTileUrlTemplate(defaultTileUrl)
+                    page.saveTileUrlField(true)
                 }
             }
 
@@ -145,7 +246,7 @@ Page {
                 text: "Disable map tiles"
                 onClicked: {
                     tileUrl.text = ""
-                    stumblefish.setMapTileUrlTemplate("")
+                    page.saveTileUrlField(true)
                 }
             }
 

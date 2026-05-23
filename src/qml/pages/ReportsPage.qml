@@ -34,6 +34,7 @@ Page {
         PullDownMenu {
             MenuItem {
                 text: "View map"
+                enabled: count("total") > 0
                 onClicked: pageStack.push(Qt.resolvedUrl("MapPage.qml"))
             }
             MenuItem {

@@ -1,2 +1,5 @@
+* Sun May 24 2026 Andrew Branson <andrew@example.invalid> 0.1.1-1
+- Fix empty-report map access, settings URL saving, and default background mode.
+
 * Tue May 19 2026 Andrew Branson <andrew@example.invalid> 0.1.0-1
 - Initial location report collector package.

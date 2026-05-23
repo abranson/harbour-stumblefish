@@ -34,7 +34,7 @@ Settings::Settings(QObject *parent)
 
 QString Settings::mode() const
 {
-    const QString current = value(QString::fromLatin1(ModeKey), QStringLiteral("active")).toString();
+    const QString current = value(QString::fromLatin1(ModeKey), QStringLiteral("passive")).toString();
     return current == QStringLiteral("passive") ? current : QStringLiteral("active");
 }
 
@@ -184,7 +184,7 @@ QVariant Settings::value(const QString &key, const QVariant &defaultValue) const
 void Settings::ensureDefaults()
 {
     if (!m_settings.contains(QString::fromLatin1(ModeKey))) {
-        m_settings.setValue(QString::fromLatin1(ModeKey), QStringLiteral("active"));
+        m_settings.setValue(QString::fromLatin1(ModeKey), QStringLiteral("passive"));
     }
     if (!m_settings.contains(QString::fromLatin1(WifiKey))) {
         m_settings.setValue(QString::fromLatin1(WifiKey), true);
