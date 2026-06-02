@@ -149,6 +149,16 @@ Page {
             }
 
             TextSwitch {
+                text: "Status notifications"
+                description: checked
+                             ? "Shows collection status while active"
+                             : "Hides collection status notifications"
+                checked: !hasSetting("statusNotificationsEnabled")
+                         || !!stumblefish.settings.statusNotificationsEnabled
+                onClicked: stumblefish.setStatusNotificationsEnabled(checked)
+            }
+
+            TextSwitch {
                 text: "Active mode when closed"
                 description: checked
                              ? "Requests location fixes while running in background"

@@ -17,6 +17,7 @@ BuildRequires:  pkgconfig(Qt5Quick)
 BuildRequires:  pkgconfig(Qt5Sql)
 BuildRequires:  pkgconfig(Qt5Test)
 BuildRequires:  pkgconfig(connman-qt5)
+BuildRequires:  pkgconfig(nemonotifications-qt5)
 BuildRequires:  pkgconfig(qofonoext)
 BuildRequires:  pkgconfig(sailfishapp)
 BuildRequires:  desktop-file-utils

@@ -44,6 +44,7 @@ public:
     Q_INVOKABLE void setAutoUploadEnabled(bool enabled);
     Q_INVOKABLE void setUploadOnNonWifi(bool enabled);
     Q_INVOKABLE void setAllowBackgroundDaemon(bool enabled);
+    Q_INVOKABLE void setStatusNotificationsEnabled(bool enabled);
     Q_INVOKABLE void collectNow();
     Q_INVOKABLE void uploadPending();
     Q_INVOKABLE void retryReport(int id);

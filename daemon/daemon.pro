@@ -9,7 +9,7 @@ QMAKE_LFLAGS += -pie
 QT -= gui
 QT += core dbus network positioning sql
 
-PKGCONFIG += connman-qt5 qofonoext
+PKGCONFIG += connman-qt5 nemonotifications-qt5 qofonoext
 
 INCLUDEPATH += . ../common
 DEFINES += APP_VERSION=\\\"$$VERSION\\\"

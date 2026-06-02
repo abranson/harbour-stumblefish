@@ -61,7 +61,7 @@ private Q_SLOTS:
 
 private:
     void applyActiveState();
-    void emitFix(const PositionFix &fix);
+    void emitGnssFix(const PositionFix &fix);
     bool hasFreshFix() const;
     bool shouldAccept(const PositionFix &fix) const;
 
@@ -76,7 +76,7 @@ private:
     int m_satellitesInUse;
     int m_satellitesVisible;
     qint64 m_lastSatelliteMs;
-    qint64 m_lastActiveGnssFixMs;
+    qint64 m_lastGnssPositionMs;
 };
 
 Q_DECLARE_METATYPE(GeoclueAccuracy)

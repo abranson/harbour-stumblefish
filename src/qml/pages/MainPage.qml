@@ -91,7 +91,9 @@ Page {
             DetailItem {
                 label: "GNSS"
                 value: stumblefish.status.gnssBackedFix
-                       ? "backed by " + stumblefish.status.satellitesInUse + " satellites"
+                       ? (stumblefish.status.satellitesInUse > 0
+                          ? "backed by " + stumblefish.status.satellitesInUse + " satellites"
+                          : "backed by GNSS")
                        : "waiting for satellites"
             }
 

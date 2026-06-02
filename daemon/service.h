@@ -20,6 +20,7 @@
 #include "wificollector.h"
 
 class NetworkManager;
+class Notification;
 
 class Service : public QObject, protected QDBusContext
 {
@@ -28,6 +29,7 @@ class Service : public QObject, protected QDBusContext
 
 public:
     explicit Service(QObject *parent = 0);
+    ~Service();
 
 public Q_SLOTS:
     QVariantMap status() const;
@@ -42,6 +44,7 @@ public Q_SLOTS:
     void uploadPending();
     void appOpened();
     void appClosed();
+    void turnOffBackgroundActiveMode();
     void retryReport(int reportId);
     void deleteReport(int reportId);
     void clearPendingReports();
@@ -72,8 +75,13 @@ private:
     bool collectionAllowed() const;
     QString effectiveMode() const;
     QString collectionStateMessage() const;
+    bool statusNotificationShouldBeVisible() const;
+    bool statusNotificationHasTurnOffAction() const;
     bool positionShouldBeActive() const;
     void syncUserServiceEnabled() const;
+    void updateStatusNotification(const QString &body);
+    void closeStatusNotification();
+    void closeStoredStatusNotifications();
     bool collectReport(const PositionFix &fix, const QString &reason);
     bool isDuplicateReport(const Report &report) const;
     void addAppClient(const QString &serviceName);
@@ -95,6 +103,10 @@ private:
     QTimer m_lifecycleQuitTimer;
     QSet<QString> m_appClients;
     QString m_lastMessage;
+    QString m_lastStatusNotificationBody;
+    Notification *m_statusNotification;
+    bool m_lastStatusNotificationHasTurnOffAction;
+    bool m_statusNotificationVisible;
     bool m_quitWhenIdle;
 };
 

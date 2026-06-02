@@ -12,6 +12,7 @@ const char AutoUploadKey[] = "upload/automatic";
 const char UploadOnNonWifiKey[] = "upload/onNonWifi";
 const char AllowBackgroundDaemonKey[] = "daemon/allowBackgroundDaemon";
 const char RunOnlyWhenAppOpenKey[] = "daemon/runOnlyWhenAppOpen";
+const char StatusNotificationsKey[] = "notifications/status";
 const char EndpointKey[] = "upload/endpoint";
 const char LastAutoUploadMsKey[] = "upload/lastAutoUploadMs";
 const char MapTileUrlTemplateKey[] = "map/tileUrlTemplate";
@@ -68,6 +69,11 @@ bool Settings::allowBackgroundDaemon() const
     return value(QString::fromLatin1(AllowBackgroundDaemonKey), false).toBool();
 }
 
+bool Settings::statusNotificationsEnabled() const
+{
+    return value(QString::fromLatin1(StatusNotificationsKey), true).toBool();
+}
+
 QString Settings::endpoint() const
 {
     const QString configured = value(QString::fromLatin1(EndpointKey),
@@ -118,6 +124,7 @@ QVariantMap Settings::toMap() const
     map.insert(QStringLiteral("autoUploadEnabled"), autoUploadEnabled());
     map.insert(QStringLiteral("uploadOnNonWifi"), uploadOnNonWifi());
     map.insert(QStringLiteral("allowBackgroundDaemon"), allowBackgroundDaemon());
+    map.insert(QStringLiteral("statusNotificationsEnabled"), statusNotificationsEnabled());
     map.insert(QStringLiteral("endpoint"), endpoint());
     map.insert(QStringLiteral("mapTileUrlTemplate"), mapTileUrlTemplate());
     map.insert(QStringLiteral("reportRetentionDays"), reportRetentionDays());
@@ -150,6 +157,9 @@ void Settings::setValue(const QString &key, const QVariant &newValue)
         value = newValue.toBool();
     } else if (key == QStringLiteral("allowBackgroundDaemon")) {
         storageKey = QString::fromLatin1(AllowBackgroundDaemonKey);
+        value = newValue.toBool();
+    } else if (key == QStringLiteral("statusNotificationsEnabled")) {
+        storageKey = QString::fromLatin1(StatusNotificationsKey);
         value = newValue.toBool();
     } else if (key == QStringLiteral("runOnlyWhenAppOpen")) {
         storageKey = QString::fromLatin1(AllowBackgroundDaemonKey);
@@ -206,6 +216,9 @@ void Settings::ensureDefaults()
                 ? !m_settings.value(QString::fromLatin1(RunOnlyWhenAppOpenKey), true).toBool()
                 : false;
         m_settings.setValue(QString::fromLatin1(AllowBackgroundDaemonKey), allowBackground);
+    }
+    if (!m_settings.contains(QString::fromLatin1(StatusNotificationsKey))) {
+        m_settings.setValue(QString::fromLatin1(StatusNotificationsKey), true);
     }
     if (!m_settings.contains(QString::fromLatin1(EndpointKey))) {
         m_settings.setValue(QString::fromLatin1(EndpointKey), QString::fromLatin1(Stumblefish::DefaultEndpoint));

@@ -64,7 +64,7 @@ GeocluePosition::GeocluePosition(QObject *parent)
     , m_satellitesInUse(0)
     , m_satellitesVisible(0)
     , m_lastSatelliteMs(0)
-    , m_lastActiveGnssFixMs(0)
+    , m_lastGnssPositionMs(0)
 {
     qDBusRegisterMetaType<GeoclueAccuracy>();
     qDBusRegisterMetaType<GeocluePrnList>();
@@ -140,8 +140,8 @@ bool GeocluePosition::hasGnssFix(qint64 timestampMs) const
         return false;
     }
 
-    if (m_lastActiveGnssFixMs > 0) {
-        const qint64 delta = qAbs(timestampMs - m_lastActiveGnssFixMs);
+    if (m_lastGnssPositionMs > 0) {
+        const qint64 delta = qAbs(timestampMs - m_lastGnssPositionMs);
         if (delta <= GnssFixWindowMs) {
             return true;
         }
@@ -199,8 +199,7 @@ void GeocluePosition::positionUpdated(const QGeoPositionInfo &info)
     fix.accuracy = info.hasAttribute(QGeoPositionInfo::HorizontalAccuracy)
             ? info.attribute(QGeoPositionInfo::HorizontalAccuracy)
             : -1.0;
-    m_lastActiveGnssFixMs = fix.timestampMs;
-    emitFix(fix);
+    emitGnssFix(fix);
 }
 
 void GeocluePosition::positionError(QGeoPositionInfoSource::Error error)
@@ -230,7 +229,9 @@ void GeocluePosition::geocluePositionChanged(int fields, int timestamp, double l
     fix.longitude = longitude;
     fix.altitude = altitude;
     fix.accuracy = accuracy.horizontal;
-    emitFix(fix);
+    // The Hybris provider is the GNSS provider. In passive mode another app may
+    // drive positions without this process seeing a matching SatelliteChanged.
+    emitGnssFix(fix);
 }
 
 void GeocluePosition::geoclueSatelliteChanged(int timestamp, int satelliteUsed,
@@ -259,7 +260,7 @@ void GeocluePosition::expireFix()
     applyActiveState();
 }
 
-void GeocluePosition::emitFix(const PositionFix &fix)
+void GeocluePosition::emitGnssFix(const PositionFix &fix)
 {
     if (!m_locationEnabled) {
         return;
@@ -269,6 +270,7 @@ void GeocluePosition::emitFix(const PositionFix &fix)
         return;
     }
 
+    m_lastGnssPositionMs = fix.timestampMs;
     m_lastFix = fix;
     m_fixExpiryTimer.start();
     m_status = QStringLiteral("available");
@@ -291,7 +293,7 @@ void GeocluePosition::applyActiveState()
         m_lastFix = PositionFix();
         m_satellitesInUse = 0;
         m_lastSatelliteMs = 0;
-        m_lastActiveGnssFixMs = 0;
+        m_lastGnssPositionMs = 0;
         m_status = QStringLiteral("location-disabled");
     } else if (m_active) {
         if (!m_updatesStarted) {

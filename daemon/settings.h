@@ -20,6 +20,7 @@ public:
     bool autoUploadEnabled() const;
     bool uploadOnNonWifi() const;
     bool allowBackgroundDaemon() const;
+    bool statusNotificationsEnabled() const;
     QString endpoint() const;
     QString mapTileUrlTemplate() const;
     int reportRetentionDays() const;
