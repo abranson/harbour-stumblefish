@@ -148,6 +148,9 @@ void BleScanner::poll()
             observation.name = stringValue(device, QStringLiteral("Alias"));
         }
         observation.signalStrength = intValue(device, QStringLiteral("RSSI"), 0);
+        if (observation.signalStrength == 0) {
+            continue;
+        }
         observation.beaconType = 0;
         observation.uuids = stringListValue(device, QStringLiteral("UUIDs"));
         observation.seenMs = now;
