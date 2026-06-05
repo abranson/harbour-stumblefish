@@ -60,7 +60,8 @@ QSet<QString> cellFingerprint(const Report &report)
                     + QString::number(cell.mobileCountryCode) + QStringLiteral(":")
                     + QString::number(cell.mobileNetworkCode) + QStringLiteral(":")
                     + QString::number(cell.locationAreaCode) + QStringLiteral(":")
-                    + QString::number(cell.cellId));
+                    + QString::number(cell.cellId) + QStringLiteral(":")
+                    + QString::number(cell.primaryScramblingCode));
     }
     return keys;
 }

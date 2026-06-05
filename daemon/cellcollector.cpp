@@ -109,6 +109,26 @@ bool hasCellIdentity(int value)
     return value != QOfonoExtCell::InvalidValue && value > 0;
 }
 
+bool hasMobileCountryCode(int value)
+{
+    return value > 0;
+}
+
+bool hasMobileNetworkCode(int value)
+{
+    return value >= 0;
+}
+
+bool hasLocationAreaCode(int value)
+{
+    return value > 0;
+}
+
+bool hasPrimaryScramblingCode(int value)
+{
+    return value >= 0;
+}
+
 bool isCellSignalLevelDbm(int value)
 {
     return value != QOfonoExtCell::InvalidValue && value >= -150 && value <= -20;
@@ -123,9 +143,44 @@ QString radioType(int type)
         return QStringLiteral("wcdma");
     case QOfonoExtCell::LTE:
         return QStringLiteral("lte");
+    case QOfonoExtCell::NR:
+        return QStringLiteral("nr");
     default:
         return QString();
     }
+}
+
+bool hasEnoughCellData(const CellObservation &cell)
+{
+    if (!hasMobileCountryCode(cell.mobileCountryCode)
+            || !hasMobileNetworkCode(cell.mobileNetworkCode)) {
+        return false;
+    }
+
+    if (cell.radioType == QStringLiteral("gsm")) {
+        return hasCellIdentity(cell.cellId)
+                || hasLocationAreaCode(cell.locationAreaCode);
+    }
+
+    if (cell.radioType == QStringLiteral("wcdma")
+            || cell.radioType == QStringLiteral("lte")
+            || cell.radioType == QStringLiteral("nr")) {
+        return hasCellIdentity(cell.cellId)
+                || hasLocationAreaCode(cell.locationAreaCode)
+                || hasPrimaryScramblingCode(cell.primaryScramblingCode);
+    }
+
+    return false;
+}
+
+QString cellKey(const CellObservation &cell)
+{
+    return cell.radioType + QStringLiteral(":")
+            + QString::number(cell.mobileCountryCode) + QStringLiteral(":")
+            + QString::number(cell.mobileNetworkCode) + QStringLiteral(":")
+            + QString::number(cell.locationAreaCode) + QStringLiteral(":")
+            + QString::number(cell.cellId) + QStringLiteral(":")
+            + QString::number(cell.primaryScramblingCode);
 }
 
 }
@@ -171,7 +226,9 @@ QList<CellObservation> CellCollector::observations() const
     }
 
     const qint64 now = QDateTime::currentMSecsSinceEpoch();
-    QSet<QString> seen;
+    QList<CellObservation> observations;
+    QSet<int> mobileCountryCodes;
+    QSet<int> mobileNetworkCodes;
     foreach (const QSharedPointer<QOfonoExtCell> &cell, m_watcher->cells()) {
         const QString type = radioType(cell->type());
         if (type.isEmpty()) {
@@ -184,31 +241,57 @@ QList<CellObservation> CellCollector::observations() const
         observation.mobileNetworkCode = knownCellValue(cell->mnc());
         const int signalLevelDbm = cell->signalLevelDbm();
         observation.signalStrength = isCellSignalLevelDbm(signalLevelDbm) ? signalLevelDbm : 0;
-        observation.serving = false;
+        observation.serving = cell->registered();
         observation.seenMs = now;
+        observation.locationAreaCode = -1;
+        observation.cellId = -1;
         observation.primaryScramblingCode = -1;
 
-        if (hasCellIdentity(cell->cid())) {
-            observation.locationAreaCode = knownCellValue(cell->lac());
-            observation.cellId = cell->cid();
-            observation.primaryScramblingCode = knownCellValue(cell->psc());
-        } else if (hasCellIdentity(cell->ci())) {
+        if (type == QStringLiteral("lte")) {
             observation.locationAreaCode = knownCellValue(cell->tac());
-            observation.cellId = cell->ci();
+            if (hasCellIdentity(cell->ci())) {
+                observation.cellId = cell->ci();
+            }
+            observation.primaryScramblingCode = knownCellValue(cell->pci());
+        } else if (type == QStringLiteral("nr")) {
+            observation.locationAreaCode = knownCellValue(cell->tac());
             observation.primaryScramblingCode = knownCellValue(cell->pci());
         } else {
+            observation.locationAreaCode = knownCellValue(cell->lac());
+            if (hasCellIdentity(cell->cid())) {
+                observation.cellId = cell->cid();
+            }
+            if (type == QStringLiteral("wcdma")) {
+                observation.primaryScramblingCode = knownCellValue(cell->psc());
+            }
+        }
+
+        if (hasMobileCountryCode(observation.mobileCountryCode)) {
+            mobileCountryCodes.insert(observation.mobileCountryCode);
+        }
+        if (hasMobileNetworkCode(observation.mobileNetworkCode)) {
+            mobileNetworkCodes.insert(observation.mobileNetworkCode);
+        }
+        observations.append(observation);
+    }
+
+    const bool canFillMobileCountryCode = mobileCountryCodes.count() == 1;
+    const bool canFillMobileNetworkCode = mobileNetworkCodes.count() == 1;
+    const int mobileCountryCode = canFillMobileCountryCode ? *mobileCountryCodes.constBegin() : -1;
+    const int mobileNetworkCode = canFillMobileNetworkCode ? *mobileNetworkCodes.constBegin() : -1;
+    QSet<QString> seen;
+    foreach (CellObservation observation, observations) {
+        if (!hasMobileCountryCode(observation.mobileCountryCode) && canFillMobileCountryCode) {
+            observation.mobileCountryCode = mobileCountryCode;
+        }
+        if (!hasMobileNetworkCode(observation.mobileNetworkCode) && canFillMobileNetworkCode) {
+            observation.mobileNetworkCode = mobileNetworkCode;
+        }
+        if (!hasEnoughCellData(observation)) {
             continue;
         }
 
-        if (observation.cellId <= 0) {
-            continue;
-        }
-
-        const QString key = observation.radioType + QStringLiteral(":")
-                + QString::number(observation.mobileCountryCode) + QStringLiteral(":")
-                + QString::number(observation.mobileNetworkCode) + QStringLiteral(":")
-                + QString::number(observation.locationAreaCode) + QStringLiteral(":")
-                + QString::number(observation.cellId);
+        const QString key = cellKey(observation);
         if (seen.contains(key)) {
             continue;
         }

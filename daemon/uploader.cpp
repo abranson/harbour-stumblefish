@@ -66,6 +66,30 @@ void insertUint16(QJsonObject *object, const QString &key, int value)
     }
 }
 
+bool hasEnoughCellData(const CellObservation &cell)
+{
+    if (cell.radioType.isEmpty()
+            || !isPositiveUint16(cell.mobileCountryCode)
+            || !isUint16(cell.mobileNetworkCode)) {
+        return false;
+    }
+
+    if (cell.radioType == QStringLiteral("gsm")) {
+        return isPositiveValue(cell.cellId)
+                || isPositiveUint16(cell.locationAreaCode);
+    }
+
+    if (cell.radioType == QStringLiteral("wcdma")
+            || cell.radioType == QStringLiteral("lte")
+            || cell.radioType == QStringLiteral("nr")) {
+        return isPositiveValue(cell.cellId)
+                || isPositiveUint16(cell.locationAreaCode)
+                || isUint16(cell.primaryScramblingCode);
+    }
+
+    return false;
+}
+
 }
 
 Uploader::Uploader(Storage *storage, Settings *settings, QObject *parent)
@@ -217,7 +241,7 @@ QByteArray Uploader::buildPayload(const QList<Report> &reports, QList<int> *incl
 
         QJsonArray cellTowers;
         foreach (const CellObservation &cell, report.cells) {
-            if (cell.radioType.isEmpty() || !isPositiveValue(cell.cellId)) {
+            if (!hasEnoughCellData(cell)) {
                 continue;
             }
 
@@ -229,7 +253,9 @@ QByteArray Uploader::buildPayload(const QList<Report> &reports, QList<int> *incl
                          cell.mobileNetworkCode);
             insertPositiveUint16(&object, QStringLiteral("locationAreaCode"),
                                  cell.locationAreaCode);
-            object.insert(QStringLiteral("cellId"), cell.cellId);
+            if (isPositiveValue(cell.cellId)) {
+                object.insert(QStringLiteral("cellId"), cell.cellId);
+            }
             insertUint16(&object, QStringLiteral("primaryScramblingCode"),
                          cell.primaryScramblingCode);
             if (cell.signalStrength < 0) {
