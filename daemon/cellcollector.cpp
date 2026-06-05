@@ -47,6 +47,7 @@ const char OfonoService[] = "org.ofono";
 const char OfonoManagerPath[] = "/";
 const char OfonoManagerInterface[] = "org.ofono.Manager";
 const char OfonoSimManagerInterface[] = "org.ofono.SimManager";
+const int QOfonoExtCellNrType = 4;
 
 QVariant unwrap(const QVariant &value)
 {
@@ -104,6 +105,13 @@ int knownCellValue(int value)
     return value == QOfonoExtCell::InvalidValue ? -1 : value;
 }
 
+int knownCellProperty(const QOfonoExtCell *cell, const char *name)
+{
+    bool ok = false;
+    const int value = cell->property(name).toInt(&ok);
+    return ok ? value : QOfonoExtCell::InvalidValue;
+}
+
 bool hasCellIdentity(int value)
 {
     return value != QOfonoExtCell::InvalidValue && value > 0;
@@ -148,9 +156,10 @@ QString radioType(int type)
         return QStringLiteral("wcdma");
     case QOfonoExtCell::LTE:
         return QStringLiteral("lte");
-    case QOfonoExtCell::NR:
-        return QStringLiteral("nr");
     default:
+        if (type == QOfonoExtCellNrType) {
+            return QStringLiteral("nr");
+        }
         return QString();
     }
 }
@@ -268,7 +277,7 @@ QList<CellObservation> CellCollector::observations() const
         } else if (type == QStringLiteral("nr")) {
             observation.locationAreaCode = knownCellValue(cell->tac());
             observation.primaryScramblingCode = knownCellValue(cell->pci());
-            observation.arfcn = knownCellValue(cell->nrarfcn());
+            observation.arfcn = knownCellValue(knownCellProperty(cell.data(), "nrarfcn"));
         } else {
             observation.locationAreaCode = knownCellValue(cell->lac());
             if (hasCellIdentity(cell->cid())) {
