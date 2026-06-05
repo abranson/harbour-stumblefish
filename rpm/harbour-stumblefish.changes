@@ -1,3 +1,8 @@
+* Fri Jun 05 2026 Andrew Branson <andrew@example.invalid> 0.1.2-1
+- Improve BeaconDB report compatibility.
+- Include SSIDs, dBm signals, scan ages, and partial neighbour cell metadata.
+- Add background collection status notifications.
+
 * Sun May 24 2026 Andrew Branson <andrew@example.invalid> 0.1.1-1
 - Fix empty-report map access, settings URL saving, and default background mode.
 

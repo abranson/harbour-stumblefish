@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 Name:       harbour-stumblefish
 Summary:    Location report collector for Sailfish OS
-Version:    0.1.1
+Version:    0.1.2
 Release:    1
 License:    MIT
 Group:      Qt/Qt
