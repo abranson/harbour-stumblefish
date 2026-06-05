@@ -45,6 +45,9 @@ struct CellObservation
     int locationAreaCode;
     int cellId;
     int primaryScramblingCode;
+    int asu;
+    int timingAdvance;
+    int arfcn;
     int signalStrength;
     bool serving;
     qint64 seenMs;

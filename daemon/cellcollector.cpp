@@ -129,6 +129,11 @@ bool hasPrimaryScramblingCode(int value)
     return value >= 0;
 }
 
+bool hasAsu(int value)
+{
+    return value >= 0 && value != 99;
+}
+
 bool isCellSignalLevelDbm(int value)
 {
     return value != QOfonoExtCell::InvalidValue && value >= -150 && value <= -20;
@@ -180,7 +185,8 @@ QString cellKey(const CellObservation &cell)
             + QString::number(cell.mobileNetworkCode) + QStringLiteral(":")
             + QString::number(cell.locationAreaCode) + QStringLiteral(":")
             + QString::number(cell.cellId) + QStringLiteral(":")
-            + QString::number(cell.primaryScramblingCode);
+            + QString::number(cell.primaryScramblingCode) + QStringLiteral(":")
+            + QString::number(cell.arfcn);
 }
 
 }
@@ -246,6 +252,10 @@ QList<CellObservation> CellCollector::observations() const
         observation.locationAreaCode = -1;
         observation.cellId = -1;
         observation.primaryScramblingCode = -1;
+        const int asu = knownCellValue(cell->signalStrength());
+        observation.asu = hasAsu(asu) ? asu : -1;
+        observation.timingAdvance = -1;
+        observation.arfcn = -1;
 
         if (type == QStringLiteral("lte")) {
             observation.locationAreaCode = knownCellValue(cell->tac());
@@ -253,9 +263,12 @@ QList<CellObservation> CellCollector::observations() const
                 observation.cellId = cell->ci();
             }
             observation.primaryScramblingCode = knownCellValue(cell->pci());
+            observation.timingAdvance = knownCellValue(cell->timingAdvance());
+            observation.arfcn = knownCellValue(cell->earfcn());
         } else if (type == QStringLiteral("nr")) {
             observation.locationAreaCode = knownCellValue(cell->tac());
             observation.primaryScramblingCode = knownCellValue(cell->pci());
+            observation.arfcn = knownCellValue(cell->nrarfcn());
         } else {
             observation.locationAreaCode = knownCellValue(cell->lac());
             if (hasCellIdentity(cell->cid())) {
@@ -263,6 +276,9 @@ QList<CellObservation> CellCollector::observations() const
             }
             if (type == QStringLiteral("wcdma")) {
                 observation.primaryScramblingCode = knownCellValue(cell->psc());
+                observation.arfcn = knownCellValue(cell->uarfcn());
+            } else if (type == QStringLiteral("gsm")) {
+                observation.arfcn = knownCellValue(cell->arfcn());
             }
         }
 

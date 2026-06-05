@@ -66,6 +66,13 @@ void insertUint16(QJsonObject *object, const QString &key, int value)
     }
 }
 
+void insertKnownValue(QJsonObject *object, const QString &key, int value)
+{
+    if (isKnownValue(value)) {
+        object->insert(key, value);
+    }
+}
+
 bool hasEnoughCellData(const CellObservation &cell)
 {
     if (cell.radioType.isEmpty()
@@ -258,6 +265,9 @@ QByteArray Uploader::buildPayload(const QList<Report> &reports, QList<int> *incl
             }
             insertUint16(&object, QStringLiteral("primaryScramblingCode"),
                          cell.primaryScramblingCode);
+            insertKnownValue(&object, QStringLiteral("asu"), cell.asu);
+            insertKnownValue(&object, QStringLiteral("timingAdvance"), cell.timingAdvance);
+            insertKnownValue(&object, QStringLiteral("arfcn"), cell.arfcn);
             if (cell.signalStrength < 0) {
                 object.insert(QStringLiteral("signalStrength"), cell.signalStrength);
             }

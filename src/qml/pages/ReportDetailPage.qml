@@ -15,6 +15,16 @@ Page {
         return item && item[name] !== undefined && item[name] !== null ? item[name] : fallback
     }
 
+    function positiveItemField(item, name) {
+        var value = Number(itemField(item, name, -1))
+        return value > 0 ? value : ""
+    }
+
+    function knownItemField(item, name) {
+        var value = Number(itemField(item, name, -1))
+        return value >= 0 ? value : ""
+    }
+
     function timeText(ms) {
         var value = Number(ms)
         return value > 0 ? Qt.formatDateTime(new Date(value), "yyyy-MM-dd hh:mm:ss") : ""
@@ -26,6 +36,82 @@ Page {
         }
         return Number(field("latitude", 0)).toFixed(6) + ", "
                 + Number(field("longitude", 0)).toFixed(6)
+    }
+
+    function cellRadioType(item) {
+        return String(itemField(item, "radioType", "cell"))
+    }
+
+    function cellLabel(item) {
+        return cellRadioType(item).toUpperCase()
+                + (itemField(item, "serving", false) ? " serving" : " neighbour")
+    }
+
+    function cellAreaName(item) {
+        var radioType = cellRadioType(item)
+        return radioType === "lte" || radioType === "nr" ? "TAC" : "LAC"
+    }
+
+    function cellCodeName(item) {
+        var radioType = cellRadioType(item)
+        return radioType === "lte" || radioType === "nr" ? "PCI" : "PSC"
+    }
+
+    function cellArfcnName(item) {
+        var radioType = cellRadioType(item)
+        if (radioType === "lte") {
+            return "EARFCN"
+        } else if (radioType === "nr") {
+            return "NRARFCN"
+        } else if (radioType === "wcdma") {
+            return "UARFCN"
+        }
+        return "ARFCN"
+    }
+
+    function cellText(item) {
+        var parts = []
+        var mobileCountryCode = positiveItemField(item, "mobileCountryCode")
+        var mobileNetworkCode = knownItemField(item, "mobileNetworkCode")
+        if (mobileCountryCode !== "" && mobileNetworkCode !== "") {
+            parts.push(mobileCountryCode + "-" + mobileNetworkCode)
+        }
+
+        var locationAreaCode = positiveItemField(item, "locationAreaCode")
+        if (locationAreaCode !== "") {
+            parts.push(cellAreaName(item) + " " + locationAreaCode)
+        }
+
+        var cellId = positiveItemField(item, "cellId")
+        if (cellId !== "") {
+            parts.push("ID " + cellId)
+        }
+
+        var primaryScramblingCode = knownItemField(item, "primaryScramblingCode")
+        if (primaryScramblingCode !== "") {
+            parts.push(cellCodeName(item) + " " + primaryScramblingCode)
+        }
+
+        var arfcn = knownItemField(item, "arfcn")
+        if (arfcn !== "") {
+            parts.push(cellArfcnName(item) + " " + arfcn)
+        }
+
+        var asu = knownItemField(item, "asu")
+        if (asu !== "") {
+            parts.push("ASU " + asu)
+        }
+
+        var timingAdvance = knownItemField(item, "timingAdvance")
+        if (timingAdvance !== "") {
+            parts.push("TA " + timingAdvance)
+        }
+
+        var signalStrength = Number(itemField(item, "signalStrength", 0))
+        if (signalStrength < 0) {
+            parts.push(signalStrength + " dBm")
+        }
+        return parts.join("  ")
     }
 
     Component.onCompleted: stumblefish.loadReport(reportId)
@@ -124,11 +210,8 @@ Page {
             Repeater {
                 model: field("cells", [])
                 delegate: DetailItem {
-                    label: itemField(modelData, "radioType", "")
-                    value: itemField(modelData, "mobileCountryCode", "")
-                           + "-" + itemField(modelData, "mobileNetworkCode", "")
-                           + " " + itemField(modelData, "locationAreaCode", "")
-                           + "/" + itemField(modelData, "cellId", "")
+                    label: cellLabel(modelData)
+                    value: cellText(modelData)
                 }
             }
 
