@@ -42,8 +42,9 @@ Stumblefish is an early usable Sailfish OS app and user daemon.
 
 ## Privacy Notes
 
-- Stumblefish does not store or upload Wi-Fi SSIDs.
-- Wi-Fi SSIDs are only read transiently to avoid hidden or `_nomap` networks.
+- Wi-Fi SSIDs are stored with local reports and included when reports are
+  uploaded to the configured endpoint.
+- Hidden Wi-Fi networks and networks ending in `_nomap` are skipped.
 - Location reports are not automatically uploaded unless automatic upload is
   enabled.
 - Map tile requests go to the configured tile provider and may reveal viewed

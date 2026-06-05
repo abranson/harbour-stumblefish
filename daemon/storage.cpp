@@ -745,8 +745,6 @@ bool Storage::migrate()
                                "on map_report_cells (zoom, q, r)"))
         && exec(QStringLiteral("create index if not exists map_cells_center_idx "
                                "on map_cells (zoom, center_latitude, center_longitude)"))
-        && exec(QStringLiteral("update wifi_observations set ssid = '' "
-                               "where ssid is not null and ssid != ''"))
         && [this]() {
             bool uploadsRecovered = false;
             if (!recoverInterruptedUploads(m_db, &uploadsRecovered, &m_lastError)) {
@@ -801,10 +799,11 @@ int Storage::addReport(const Report &report)
     foreach (const WifiObservation &wifi, report.wifi) {
         QSqlQuery insert(m_db);
         insert.prepare(QStringLiteral("insert into wifi_observations "
-                                      "(report_id, mac_address, frequency, signal_strength, seen_ms) "
-                                      "values (?, ?, ?, ?, ?)"));
+                                      "(report_id, mac_address, ssid, frequency, signal_strength, seen_ms) "
+                                      "values (?, ?, ?, ?, ?, ?)"));
         insert.addBindValue(reportId);
         insert.addBindValue(wifi.macAddress);
+        insert.addBindValue(wifi.ssid);
         insert.addBindValue(wifi.frequency);
         insert.addBindValue(wifi.signalStrength);
         insert.addBindValue(wifi.seenMs);
@@ -1399,7 +1398,7 @@ QList<WifiObservation> Storage::wifiForReport(int reportId) const
 {
     QList<WifiObservation> observations;
     QSqlQuery query(m_db);
-    query.prepare(QStringLiteral("select mac_address, frequency, signal_strength, seen_ms "
+    query.prepare(QStringLiteral("select mac_address, ssid, frequency, signal_strength, seen_ms "
                                  "from wifi_observations where report_id = ? order by id"));
     query.addBindValue(reportId);
     if (!query.exec()) {
@@ -1409,9 +1408,10 @@ QList<WifiObservation> Storage::wifiForReport(int reportId) const
     while (query.next()) {
         WifiObservation wifi;
         wifi.macAddress = query.value(0).toString();
-        wifi.frequency = query.value(1).toInt();
-        wifi.signalStrength = query.value(2).toInt();
-        wifi.seenMs = query.value(3).toLongLong();
+        wifi.ssid = query.value(1).toString();
+        wifi.frequency = query.value(2).toInt();
+        wifi.signalStrength = query.value(3).toInt();
+        wifi.seenMs = query.value(4).toLongLong();
         observations.append(wifi);
     }
     return observations;

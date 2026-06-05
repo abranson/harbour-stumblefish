@@ -611,7 +611,6 @@ bool Service::collectReport(const PositionFix &fix, const QString &reason)
     }
 
     Report report;
-    report.timestampMs = QDateTime::currentMSecsSinceEpoch();
     report.position = fix;
     report.mode = effectiveMode();
     report.wifiEnabled = m_settings.wifiEnabled();
@@ -628,6 +627,7 @@ bool Service::collectReport(const PositionFix &fix, const QString &reason)
     if (report.bleEnabled) {
         report.ble = m_ble.observations();
     }
+    report.timestampMs = QDateTime::currentMSecsSinceEpoch();
 
     if (report.cells.isEmpty() && report.ble.isEmpty() && report.wifi.count() < 2) {
         m_lastMessage = QStringLiteral("Not enough radio observations for a report");

@@ -34,7 +34,7 @@ private Q_SLOTS:
 
 private:
     void uploadPending(int maxRetryCount);
-    QByteArray buildPayload(const QList<Report> &reports) const;
+    QByteArray buildPayload(const QList<Report> &reports, QList<int> *includedIds) const;
 
     Storage *m_storage;
     Settings *m_settings;

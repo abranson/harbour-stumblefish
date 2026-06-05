@@ -31,6 +31,7 @@ struct PositionFix
 struct WifiObservation
 {
     QString macAddress;
+    QString ssid;
     int frequency;
     int signalStrength;
     qint64 seenMs;

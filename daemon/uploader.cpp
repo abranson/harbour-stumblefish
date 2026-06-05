@@ -21,11 +21,49 @@ const int AutomaticMaxRetries = 5;
 
 int age(qint64 reportTimestamp, qint64 seenTimestamp)
 {
+    if (reportTimestamp <= 0 || seenTimestamp <= 0) {
+        return 0;
+    }
+
     const qint64 value = reportTimestamp - seenTimestamp;
-    if (value < 0) {
+    if (value <= 0) {
         return 0;
     }
     return value > INT_MAX ? INT_MAX : static_cast<int>(value);
+}
+
+bool isKnownValue(int value)
+{
+    return value != INT_MAX && value >= 0;
+}
+
+bool isPositiveValue(int value)
+{
+    return value != INT_MAX && value > 0;
+}
+
+bool isUint16(int value)
+{
+    return isKnownValue(value) && value <= 65535;
+}
+
+bool isPositiveUint16(int value)
+{
+    return isPositiveValue(value) && value <= 65535;
+}
+
+void insertPositiveUint16(QJsonObject *object, const QString &key, int value)
+{
+    if (isPositiveUint16(value)) {
+        object->insert(key, value);
+    }
+}
+
+void insertUint16(QJsonObject *object, const QString &key, int value)
+{
+    if (isUint16(value)) {
+        object->insert(key, value);
+    }
 }
 
 }
@@ -73,17 +111,30 @@ void Uploader::uploadPending(int maxRetryCount)
         return;
     }
 
-    m_uploadingIds.clear();
+    QList<int> includedIds;
+    const QByteArray payload = buildPayload(reports, &includedIds);
+    QList<int> skippedIds;
     foreach (const Report &report, reports) {
-        m_uploadingIds.append(report.id);
+        if (!includedIds.contains(report.id)) {
+            skippedIds.append(report.id);
+        }
     }
+    if (!skippedIds.isEmpty()) {
+        m_storage->markFailed(skippedIds, QStringLiteral("Report has no uploadable radio observations"));
+    }
+    if (includedIds.isEmpty()) {
+        emit uploadFinished(false, QStringLiteral("No uploadable reports"));
+        return;
+    }
+
+    m_uploadingIds = includedIds;
     m_storage->markUploading(m_uploadingIds);
 
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
     request.setRawHeader("User-Agent", Stumblefish::uploadUserAgent());
 
-    m_reply = m_network->post(request, buildPayload(reports));
+    m_reply = m_network->post(request, payload);
     connect(m_reply, SIGNAL(finished()), this, SLOT(replyFinished()));
 }
 
@@ -123,7 +174,7 @@ void Uploader::replyFinished()
     emit uploadFinished(success, message);
 }
 
-QByteArray Uploader::buildPayload(const QList<Report> &reports) const
+QByteArray Uploader::buildPayload(const QList<Report> &reports, QList<int> *includedIds) const
 {
     QJsonArray items;
     foreach (const Report &report, reports) {
@@ -141,15 +192,23 @@ QByteArray Uploader::buildPayload(const QList<Report> &reports) const
 
         QJsonArray wifiAccessPoints;
         foreach (const WifiObservation &wifi, report.wifi) {
+            if (wifi.macAddress.isEmpty() || wifi.ssid.isEmpty()) {
+                continue;
+            }
+
             QJsonObject object;
             object.insert(QStringLiteral("macAddress"), wifi.macAddress);
+            object.insert(QStringLiteral("ssid"), wifi.ssid);
             if (wifi.frequency > 0) {
                 object.insert(QStringLiteral("frequency"), wifi.frequency);
             }
-            if (wifi.signalStrength != 0) {
+            if (wifi.signalStrength < 0) {
                 object.insert(QStringLiteral("signalStrength"), wifi.signalStrength);
             }
-            object.insert(QStringLiteral("age"), age(report.timestampMs, wifi.seenMs));
+            const int observationAge = age(report.timestampMs, wifi.seenMs);
+            if (observationAge > 0) {
+                object.insert(QStringLiteral("age"), observationAge);
+            }
             wifiAccessPoints.append(object);
         }
         if (!wifiAccessPoints.isEmpty()) {
@@ -158,20 +217,25 @@ QByteArray Uploader::buildPayload(const QList<Report> &reports) const
 
         QJsonArray cellTowers;
         foreach (const CellObservation &cell, report.cells) {
+            if (cell.radioType.isEmpty() || !isPositiveValue(cell.cellId)) {
+                continue;
+            }
+
             QJsonObject object;
             object.insert(QStringLiteral("radioType"), cell.radioType);
-            object.insert(QStringLiteral("mobileCountryCode"), cell.mobileCountryCode);
-            object.insert(QStringLiteral("mobileNetworkCode"), cell.mobileNetworkCode);
-            object.insert(QStringLiteral("locationAreaCode"), cell.locationAreaCode);
+            insertPositiveUint16(&object, QStringLiteral("mobileCountryCode"),
+                                 cell.mobileCountryCode);
+            insertUint16(&object, QStringLiteral("mobileNetworkCode"),
+                         cell.mobileNetworkCode);
+            insertPositiveUint16(&object, QStringLiteral("locationAreaCode"),
+                                 cell.locationAreaCode);
             object.insert(QStringLiteral("cellId"), cell.cellId);
-            if (cell.primaryScramblingCode >= 0) {
-                object.insert(QStringLiteral("primaryScramblingCode"), cell.primaryScramblingCode);
-            }
-            if (cell.signalStrength != 0) {
+            insertUint16(&object, QStringLiteral("primaryScramblingCode"),
+                         cell.primaryScramblingCode);
+            if (cell.signalStrength < 0) {
                 object.insert(QStringLiteral("signalStrength"), cell.signalStrength);
             }
             object.insert(QStringLiteral("serving"), cell.serving ? 1 : 0);
-            object.insert(QStringLiteral("age"), age(report.timestampMs, cell.seenMs));
             cellTowers.append(object);
         }
         if (!cellTowers.isEmpty()) {
@@ -185,7 +249,7 @@ QByteArray Uploader::buildPayload(const QList<Report> &reports) const
             if (!ble.name.isEmpty()) {
                 object.insert(QStringLiteral("name"), ble.name);
             }
-            if (ble.signalStrength != 0) {
+            if (ble.signalStrength < 0) {
                 object.insert(QStringLiteral("signalStrength"), ble.signalStrength);
             }
             if (ble.beaconType != 0) {
@@ -200,13 +264,19 @@ QByteArray Uploader::buildPayload(const QList<Report> &reports) const
             if (!ble.id3.isEmpty()) {
                 object.insert(QStringLiteral("id3"), ble.id3);
             }
-            object.insert(QStringLiteral("age"), age(report.timestampMs, ble.seenMs));
             bluetoothBeacons.append(object);
         }
         if (!bluetoothBeacons.isEmpty()) {
             item.insert(QStringLiteral("bluetoothBeacons"), bluetoothBeacons);
         }
 
+        if (wifiAccessPoints.count() < 2 && cellTowers.isEmpty() && bluetoothBeacons.isEmpty()) {
+            continue;
+        }
+
+        if (includedIds) {
+            includedIds->append(report.id);
+        }
         items.append(item);
     }
 

@@ -3,6 +3,19 @@
 
 #include <QtTest>
 
+namespace {
+
+QByteArray expectedUserAgent(const QByteArray &comment = QByteArray())
+{
+    QByteArray userAgent = QByteArray("harbour-stumblefish/") + APP_VERSION;
+    if (!comment.isEmpty()) {
+        userAgent += " (" + comment + ')';
+    }
+    return userAgent;
+}
+
+}
+
 class tst_UploadUserAgent : public QObject
 {
     Q_OBJECT
@@ -21,7 +34,7 @@ void tst_UploadUserAgent::appendsOsReleaseComment()
             "VERSION_ID=\"5.0.0.68\"\n";
 
     QCOMPARE(Stumblefish::uploadUserAgent(osRelease),
-             QByteArray("harbour-stumblefish/0.1.1 (Sailfish OS; 5.0.0.68)"));
+             expectedUserAgent(QByteArray("Sailfish OS; 5.0.0.68")));
 }
 
 void tst_UploadUserAgent::acceptsUnquotedOsReleaseValues()
@@ -31,13 +44,13 @@ void tst_UploadUserAgent::acceptsUnquotedOsReleaseValues()
             "VERSION_ID=5\n";
 
     QCOMPARE(Stumblefish::uploadUserAgent(osRelease),
-             QByteArray("harbour-stumblefish/0.1.1 (Sailfish; 5)"));
+             expectedUserAgent(QByteArray("Sailfish; 5")));
 }
 
 void tst_UploadUserAgent::omitsCommentWhenOsReleaseIsIncomplete()
 {
     QCOMPARE(Stumblefish::uploadUserAgent(QByteArray("NAME=\"Sailfish OS\"\n")),
-             QByteArray("harbour-stumblefish/0.1.1"));
+             expectedUserAgent());
 }
 
 void tst_UploadUserAgent::sanitizesCommentDelimiters()
@@ -47,7 +60,7 @@ void tst_UploadUserAgent::sanitizesCommentDelimiters()
             "VERSION_ID=\"5)0\"\n";
 
     QCOMPARE(Stumblefish::uploadUserAgent(osRelease),
-             QByteArray("harbour-stumblefish/0.1.1 (Sailfish OS; 5 0)"));
+             expectedUserAgent(QByteArray("Sailfish OS; 5 0")));
 }
 
 QTEST_APPLESS_MAIN(tst_UploadUserAgent)

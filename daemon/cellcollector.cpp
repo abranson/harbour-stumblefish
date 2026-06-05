@@ -99,6 +99,21 @@ bool simPresent(const QVariantMap &properties)
             || !stringProperty(properties, QStringLiteral("MobileNetworkCode")).isEmpty();
 }
 
+int knownCellValue(int value)
+{
+    return value == QOfonoExtCell::InvalidValue ? -1 : value;
+}
+
+bool hasCellIdentity(int value)
+{
+    return value != QOfonoExtCell::InvalidValue && value > 0;
+}
+
+bool isCellSignalLevelDbm(int value)
+{
+    return value != QOfonoExtCell::InvalidValue && value >= -150 && value <= -20;
+}
+
 QString radioType(int type)
 {
     switch (type) {
@@ -165,27 +180,27 @@ QList<CellObservation> CellCollector::observations() const
 
         CellObservation observation;
         observation.radioType = type;
-        observation.mobileCountryCode = cell->mcc();
-        observation.mobileNetworkCode = cell->mnc();
-        observation.signalStrength = cell->signalStrength();
+        observation.mobileCountryCode = knownCellValue(cell->mcc());
+        observation.mobileNetworkCode = knownCellValue(cell->mnc());
+        const int signalLevelDbm = cell->signalLevelDbm();
+        observation.signalStrength = isCellSignalLevelDbm(signalLevelDbm) ? signalLevelDbm : 0;
         observation.serving = false;
         observation.seenMs = now;
         observation.primaryScramblingCode = -1;
 
-        if (cell->cid() != QOfonoExtCell::InvalidValue && cell->cid() != 0) {
-            observation.locationAreaCode = cell->lac();
+        if (hasCellIdentity(cell->cid())) {
+            observation.locationAreaCode = knownCellValue(cell->lac());
             observation.cellId = cell->cid();
-            observation.primaryScramblingCode = cell->psc();
-        } else if (cell->ci() != QOfonoExtCell::InvalidValue && cell->ci() != 0) {
-            observation.locationAreaCode = cell->tac();
+            observation.primaryScramblingCode = knownCellValue(cell->psc());
+        } else if (hasCellIdentity(cell->ci())) {
+            observation.locationAreaCode = knownCellValue(cell->tac());
             observation.cellId = cell->ci();
-            observation.primaryScramblingCode = cell->pci();
+            observation.primaryScramblingCode = knownCellValue(cell->pci());
         } else {
             continue;
         }
 
-        if (observation.mobileCountryCode <= 0 || observation.mobileNetworkCode < 0
-                || observation.locationAreaCode <= 0 || observation.cellId <= 0) {
+        if (observation.cellId <= 0) {
             continue;
         }
 
