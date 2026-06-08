@@ -806,7 +806,12 @@ void Service::updateStatusNotification(const QString &body)
     QVariantList remoteActions;
     remoteActions << Notification::remoteAction(
                 QString::fromLatin1(NotificationOpenAction),
-                QStringLiteral("Open"));
+                QStringLiteral("Open"),
+                QString(),
+                QString(),
+                QString(),
+                QString(),
+                QVariantList());
     if (hasTurnOffAction) {
         remoteActions << Notification::remoteAction(
                     QString::fromLatin1(NotificationTurnOffAction),
