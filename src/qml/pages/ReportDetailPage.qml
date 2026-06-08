@@ -30,6 +30,37 @@ Page {
         return value > 0 ? Qt.formatDateTime(new Date(value), "yyyy-MM-dd hh:mm:ss") : ""
     }
 
+    function seenBeforeReportText(item) {
+        var reportTimestamp = Number(field("timestampMs", 0))
+        var seenTimestamp = Number(itemField(item, "seenMs", 0))
+        if (reportTimestamp <= 0 || seenTimestamp <= 0) {
+            return ""
+        }
+
+        var seconds = Math.round((reportTimestamp - seenTimestamp) / 1000)
+        return seconds >= 0 ? seconds + "s before" : ""
+    }
+
+    function wifiText(item) {
+        var parts = []
+        var seen = seenBeforeReportText(item)
+        if (seen !== "") {
+            parts.push(seen)
+        }
+
+        var signalStrength = Number(itemField(item, "signalStrength", 0))
+        if (signalStrength < 0) {
+            parts.push(signalStrength + " dBm")
+        }
+
+        var frequency = positiveItemField(item, "frequency")
+        if (frequency !== "") {
+            parts.push(frequency + " MHz")
+        }
+
+        return parts.join("\n")
+    }
+
     function positionText() {
         if (!field("id", 0)) {
             return ""
@@ -116,6 +147,11 @@ Page {
 
     Component.onCompleted: stumblefish.loadReport(reportId)
 
+    Connections {
+        target: stumblefish
+        onReportsChanged: stumblefish.loadReport(reportId)
+    }
+
     RemorsePopup {
         id: remorse
     }
@@ -138,10 +174,6 @@ Page {
                 text: "Retry upload"
                 enabled: page.report.id > 0 && page.report.uploadStatus !== "uploaded"
                 onClicked: stumblefish.retryReport(page.report.id)
-            }
-            MenuItem {
-                text: "Refresh"
-                onClicked: stumblefish.loadReport(reportId)
             }
         }
 
@@ -200,8 +232,15 @@ Page {
                 model: field("wifi", [])
                 delegate: DetailItem {
                     label: itemField(modelData, "macAddress", "")
-                    value: itemField(modelData, "signalStrength", "")
+                    value: wifiText(modelData)
                 }
+            }
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                text: "None found"
+                visible: field("id", 0) > 0 && field("wifi", []).length === 0
+                color: Theme.secondaryColor
             }
 
             SectionHeader {
@@ -214,6 +253,13 @@ Page {
                     value: cellText(modelData)
                 }
             }
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                text: "None found"
+                visible: field("id", 0) > 0 && field("cells", []).length === 0
+                color: Theme.secondaryColor
+            }
 
             SectionHeader {
                 text: "BLE Beacons"
@@ -225,6 +271,13 @@ Page {
                     value: itemField(modelData, "macAddress", "")
                            + "  " + itemField(modelData, "signalStrength", "")
                 }
+            }
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                text: "None found"
+                visible: field("id", 0) > 0 && field("ble", []).length === 0
+                color: Theme.secondaryColor
             }
         }
     }

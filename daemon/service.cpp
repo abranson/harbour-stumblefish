@@ -28,6 +28,7 @@ const qint64 PruneIntervalMs = 24 * 60 * 60 * 1000;
 const int AppLifecycleQuitDelayMs = 3000;
 const double MinimumDuplicateDistanceMeters = 30.0;
 const char ServiceUnitName[] = "harbour-stumblefishd.service";
+const char NotificationOpenAction[] = "default";
 const char NotificationTurnOffAction[] = "turn-off";
 const char StatusNotificationCategory[] = "org.stumblefish.status";
 const char StatusNotificationOrigin[] = "org.stumblefish.status";
@@ -108,6 +109,7 @@ Service::Service(QObject *parent)
     , m_statusNotification(0)
     , m_lastStatusNotificationHasTurnOffAction(false)
     , m_statusNotificationVisible(false)
+    , m_statusNotificationDismissed(false)
     , m_quitWhenIdle(false)
 {
     qRegisterMetaType<PositionFix>("PositionFix");
@@ -170,6 +172,10 @@ QVariantMap Service::status() const
     map.insert(QStringLiteral("cellStatus"), m_cell.status());
     map.insert(QStringLiteral("cellAvailable"), m_cell.available());
     map.insert(QStringLiteral("cellUnavailableReason"), m_cell.unavailableReason());
+    const bool bleAvailable = m_ble.available();
+    map.insert(QStringLiteral("bleAvailable"), bleAvailable);
+    map.insert(QStringLiteral("bleUnavailableReason"),
+               bleAvailable ? QString() : QStringLiteral("Bluetooth is off"));
     map.insert(QStringLiteral("bleStatus"), m_ble.status());
     map.insert(QStringLiteral("uploading"), m_uploader.uploading());
     const QString stateMessage = collectionStateMessage();
@@ -338,15 +344,16 @@ void Service::applySettings()
     m_wifi.setEnabled(allowed && m_settings.wifiEnabled());
     m_cell.setEnabled(allowed && m_settings.cellEnabled());
     m_ble.setEnabled(allowed && m_settings.bleEnabled());
-    m_position.setActive(positionShouldBeActive());
+    const bool activeFix = positionShouldBeActive();
+    m_position.setActive(activeFix);
+    m_wifi.setActiveScanning(activeFix && m_settings.wifiEnabled());
     scheduleAutoUpload();
 
     if (!anySourceEnabled()) {
-        m_lastMessage = m_settings.cellEnabled() && !m_cell.available()
-                ? QStringLiteral("Cell collection unavailable: ") + m_cell.unavailableReason()
-                : QStringLiteral("No data sources enabled");
+        m_lastMessage = noSourceMessage();
     } else if (m_lastMessage == QStringLiteral("No data sources enabled")
-               || m_lastMessage.startsWith(QStringLiteral("Cell collection unavailable:"))) {
+               || m_lastMessage.startsWith(QStringLiteral("Cell collection unavailable:"))
+               || m_lastMessage.startsWith(QStringLiteral("BLE collection unavailable:"))) {
         m_lastMessage.clear();
     }
 
@@ -357,13 +364,14 @@ void Service::applySettings()
 
 void Service::sourceStateChanged()
 {
-    m_position.setActive(positionShouldBeActive());
+    const bool activeFix = positionShouldBeActive();
+    m_position.setActive(activeFix);
+    m_wifi.setActiveScanning(activeFix && m_settings.wifiEnabled());
     if (!anySourceEnabled()) {
-        m_lastMessage = m_settings.cellEnabled() && !m_cell.available()
-                ? QStringLiteral("Cell collection unavailable: ") + m_cell.unavailableReason()
-                : QStringLiteral("No data sources enabled");
+        m_lastMessage = noSourceMessage();
     } else if (m_lastMessage == QStringLiteral("No data sources enabled")
-               || m_lastMessage.startsWith(QStringLiteral("Cell collection unavailable:"))) {
+               || m_lastMessage.startsWith(QStringLiteral("Cell collection unavailable:"))
+               || m_lastMessage.startsWith(QStringLiteral("BLE collection unavailable:"))) {
         m_lastMessage.clear();
     }
     emitStatus();
@@ -474,7 +482,7 @@ bool Service::anySourceEnabled() const
 {
     return m_settings.wifiEnabled()
             || (m_settings.cellEnabled() && m_cell.available())
-            || m_settings.bleEnabled();
+            || (m_settings.bleEnabled() && m_ble.available());
 }
 
 bool Service::collectionAllowed() const
@@ -515,9 +523,7 @@ QString Service::collectionStateMessage() const
     }
 
     if (!anySourceEnabled()) {
-        return m_settings.cellEnabled() && !m_cell.available()
-                ? QStringLiteral("Cell collection unavailable: ") + m_cell.unavailableReason()
-                : QStringLiteral("No data sources enabled");
+        return noSourceMessage();
     }
 
     if (!m_position.locationEnabled()) {
@@ -544,6 +550,19 @@ QString Service::collectionStateMessage() const
     }
 
     return QStringLiteral("Gathering reports");
+}
+
+QString Service::noSourceMessage() const
+{
+    if (m_settings.cellEnabled() && !m_cell.available()) {
+        return QStringLiteral("Cell collection unavailable: ") + m_cell.unavailableReason();
+    }
+
+    if (m_settings.bleEnabled() && !m_ble.available()) {
+        return QStringLiteral("BLE collection unavailable: Bluetooth is off");
+    }
+
+    return QStringLiteral("No data sources enabled");
 }
 
 bool Service::autoUploadNetworkAllowed(QString *reason) const
@@ -587,9 +606,7 @@ bool Service::autoUploadNetworkAllowed(QString *reason) const
 bool Service::collectReport(const PositionFix &fix, const QString &reason)
 {
     if (!anySourceEnabled()) {
-        m_lastMessage = m_settings.cellEnabled() && !m_cell.available()
-                ? QStringLiteral("Cell collection unavailable: ") + m_cell.unavailableReason()
-                : QStringLiteral("No data sources enabled");
+        m_lastMessage = noSourceMessage();
         emitStatus();
         return false;
     }
@@ -617,7 +634,7 @@ bool Service::collectReport(const PositionFix &fix, const QString &reason)
     report.mode = effectiveMode();
     report.wifiEnabled = m_settings.wifiEnabled();
     report.cellEnabled = m_settings.cellEnabled() && m_cell.available();
-    report.bleEnabled = m_settings.bleEnabled();
+    report.bleEnabled = m_settings.bleEnabled() && m_ble.available();
     report.endpoint = m_settings.endpoint();
 
     if (report.wifiEnabled) {
@@ -761,21 +778,35 @@ void Service::updateStatusNotification(const QString &body)
             ? QStringLiteral("Collector status unavailable")
             : body;
     const bool hasTurnOffAction = statusNotificationHasTurnOffAction();
-    if (m_statusNotificationVisible
-            && m_lastStatusNotificationBody == notificationBody
-            && m_lastStatusNotificationHasTurnOffAction == hasTurnOffAction) {
+    const bool notificationChanged =
+            m_lastStatusNotificationBody != notificationBody
+            || m_lastStatusNotificationHasTurnOffAction != hasTurnOffAction;
+    if (!notificationChanged
+            && (m_statusNotificationVisible || m_statusNotificationDismissed)) {
         return;
     }
 
+    if (m_statusNotificationDismissed && m_statusNotification) {
+        m_statusNotification->setReplacesId(0);
+    }
+
     m_statusNotificationVisible = true;
+    m_statusNotificationDismissed = false;
     m_lastStatusNotificationBody = notificationBody;
     m_lastStatusNotificationHasTurnOffAction = hasTurnOffAction;
 
     if (!m_statusNotification) {
         m_statusNotification = new Notification(this);
+        connect(m_statusNotification, &Notification::clicked,
+                this, &Service::statusNotificationClicked);
+        connect(m_statusNotification, &Notification::closed,
+                this, &Service::statusNotificationClosed);
     }
 
     QVariantList remoteActions;
+    remoteActions << Notification::remoteAction(
+                QString::fromLatin1(NotificationOpenAction),
+                QStringLiteral("Open"));
     if (hasTurnOffAction) {
         remoteActions << Notification::remoteAction(
                     QString::fromLatin1(NotificationTurnOffAction),
@@ -810,6 +841,7 @@ void Service::closeStatusNotification()
     }
 
     m_statusNotificationVisible = false;
+    m_statusNotificationDismissed = false;
     m_lastStatusNotificationBody.clear();
     m_lastStatusNotificationHasTurnOffAction = false;
     if (m_statusNotification) {
@@ -827,6 +859,39 @@ void Service::closeStoredStatusNotifications()
             notification->close();
         }
         delete object;
+    }
+}
+
+void Service::openApplication() const
+{
+    const QString applicationName = QString::fromLatin1(Stumblefish::ApplicationName);
+    const QString applicationPath = QStringLiteral("/usr/bin/") + applicationName;
+
+    QStringList arguments;
+    arguments << QStringLiteral("--type=silica-qt5")
+              << (QStringLiteral("--desktop-file=") + applicationName + QStringLiteral(".desktop"))
+              << QStringLiteral("-s")
+              << applicationPath;
+
+    if (!QProcess::startDetached(QStringLiteral("/usr/bin/invoker"), arguments)
+            && !QProcess::startDetached(applicationPath)) {
+        qWarning() << "Failed to launch application from status notification";
+    }
+}
+
+void Service::statusNotificationClicked()
+{
+    openApplication();
+}
+
+void Service::statusNotificationClosed(uint reason)
+{
+    if (reason == Notification::DismissedByUser || reason == Notification::Closed) {
+        m_statusNotificationVisible = false;
+        m_statusNotificationDismissed = statusNotificationShouldBeVisible();
+    } else if (reason == Notification::Expired) {
+        m_statusNotificationVisible = false;
+        m_statusNotificationDismissed = false;
     }
 }
 

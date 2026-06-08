@@ -68,6 +68,8 @@ private Q_SLOTS:
     void emitStatus();
     void clientServiceUnregistered(const QString &serviceName);
     void quitForAppLifecycle();
+    void statusNotificationClicked();
+    void statusNotificationClosed(uint reason);
 
 private:
     bool anySourceEnabled() const;
@@ -75,6 +77,7 @@ private:
     bool collectionAllowed() const;
     QString effectiveMode() const;
     QString collectionStateMessage() const;
+    QString noSourceMessage() const;
     bool statusNotificationShouldBeVisible() const;
     bool statusNotificationHasTurnOffAction() const;
     bool positionShouldBeActive() const;
@@ -82,6 +85,7 @@ private:
     void updateStatusNotification(const QString &body);
     void closeStatusNotification();
     void closeStoredStatusNotifications();
+    void openApplication() const;
     bool collectReport(const PositionFix &fix, const QString &reason);
     bool isDuplicateReport(const Report &report) const;
     void addAppClient(const QString &serviceName);
@@ -107,6 +111,7 @@ private:
     Notification *m_statusNotification;
     bool m_lastStatusNotificationHasTurnOffAction;
     bool m_statusNotificationVisible;
+    bool m_statusNotificationDismissed;
     bool m_quitWhenIdle;
 };
 

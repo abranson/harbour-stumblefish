@@ -12,8 +12,13 @@
 #include <QVector>
 #include <networkmanager.h>
 #include <networkservice.h>
+#include <networktechnology.h>
 
 namespace {
+
+const qint64 MaxWifiObservationAgeMs = 30 * 1000;
+const qint64 WifiScanIntervalMs = 30 * 1000;
+const int WifiScanTimeoutMs = 10 * 1000;
 
 struct IwBss
 {
@@ -169,13 +174,21 @@ QHash<QString, IwBss> iwBssByAddress()
 WifiCollector::WifiCollector(QObject *parent)
     : QObject(parent)
     , m_manager(0)
+    , m_lastScanStartedMs(0)
+    , m_scanInProgress(false)
+    , m_activeScanning(false)
     , m_enabled(false)
     , m_status(QStringLiteral("disabled"))
 {
+    m_scanTimer.setSingleShot(true);
+    m_scanTimeoutTimer.setSingleShot(true);
+    connect(&m_scanTimer, &QTimer::timeout, this, &WifiCollector::scanDue);
+    connect(&m_scanTimeoutTimer, &QTimer::timeout, this, &WifiCollector::scanTimedOut);
 }
 
 WifiCollector::~WifiCollector()
 {
+    setActiveScanning(false);
     delete m_manager;
 }
 
@@ -192,7 +205,11 @@ void WifiCollector::setEnabled(bool enabled)
             connect(m_manager, SIGNAL(servicesChanged()), this, SLOT(servicesChanged()));
         }
         m_status = QStringLiteral("enabled");
+        if (m_activeScanning) {
+            scheduleScan(0);
+        }
     } else {
+        setActiveScanning(false);
         if (m_manager) {
             m_manager->deleteLater();
             m_manager = 0;
@@ -202,10 +219,30 @@ void WifiCollector::setEnabled(bool enabled)
     emit changed();
 }
 
+void WifiCollector::setActiveScanning(bool enabled)
+{
+    if (m_activeScanning == enabled) {
+        return;
+    }
+
+    m_activeScanning = enabled;
+    if (m_activeScanning) {
+        scheduleScan(0);
+    } else {
+        m_scanTimer.stop();
+        finishScan();
+    }
+}
+
 QList<WifiObservation> WifiCollector::observations() const
 {
     QList<WifiObservation> result;
     if (!m_enabled || !m_manager) {
+        return result;
+    }
+
+    NetworkTechnology *technology = wifiTechnology();
+    if (!technology || !technology->powered()) {
         return result;
     }
 
@@ -224,6 +261,10 @@ QList<WifiObservation> WifiCollector::observations() const
         }
 
         const IwBss iw = iwEntries.value(bssid);
+        if (iw.lastSeenMs <= 0 || iw.lastSeenMs > MaxWifiObservationAgeMs) {
+            continue;
+        }
+
         QString ssid = service->name().trimmed();
         if (ssid.isEmpty() && !iw.ssid.isEmpty()) {
             ssid = iw.ssid.trimmed();
@@ -244,7 +285,7 @@ QList<WifiObservation> WifiCollector::observations() const
         observation.ssid = ssid;
         observation.frequency = frequency;
         observation.signalStrength = signalStrength;
-        observation.seenMs = iw.lastSeenMs > 0 ? now - iw.lastSeenMs : 0;
+        observation.seenMs = now - iw.lastSeenMs;
         result.append(observation);
         seen.insert(bssid);
     }
@@ -259,4 +300,81 @@ QString WifiCollector::status() const
 void WifiCollector::servicesChanged()
 {
     emit changed();
+}
+
+void WifiCollector::scanDue()
+{
+    if (!m_enabled || !m_activeScanning || !m_manager || m_scanInProgress) {
+        return;
+    }
+
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    if (m_lastScanStartedMs > 0 && now - m_lastScanStartedMs < WifiScanIntervalMs) {
+        scheduleScan();
+        return;
+    }
+
+    NetworkTechnology *technology = wifiTechnology();
+    if (!technology || !technology->powered()) {
+        scheduleScan(WifiScanIntervalMs);
+        return;
+    }
+
+    m_scanInProgress = true;
+    m_lastScanStartedMs = now;
+    m_status = QStringLiteral("scanning");
+    emit changed();
+
+    m_scanFinishedConnection = connect(technology, &NetworkTechnology::scanFinished,
+                                       this, &WifiCollector::scanFinished);
+    m_scanTimeoutTimer.start(WifiScanTimeoutMs);
+    technology->scan();
+}
+
+void WifiCollector::scanFinished()
+{
+    finishScan();
+}
+
+void WifiCollector::scanTimedOut()
+{
+    finishScan();
+}
+
+void WifiCollector::scheduleScan(int delayMs)
+{
+    if (!m_enabled || !m_activeScanning || !m_manager || m_scanInProgress) {
+        return;
+    }
+
+    if (delayMs < 0) {
+        if (m_lastScanStartedMs <= 0) {
+            delayMs = 0;
+        } else {
+            const qint64 elapsed = QDateTime::currentMSecsSinceEpoch() - m_lastScanStartedMs;
+            delayMs = static_cast<int>(qMax<qint64>(0, WifiScanIntervalMs - elapsed));
+        }
+    }
+
+    m_scanTimer.start(delayMs);
+}
+
+void WifiCollector::finishScan()
+{
+    QObject::disconnect(m_scanFinishedConnection);
+    m_scanFinishedConnection = QMetaObject::Connection();
+    m_scanTimeoutTimer.stop();
+
+    if (m_scanInProgress) {
+        m_scanInProgress = false;
+        m_status = m_enabled ? QStringLiteral("enabled") : QStringLiteral("disabled");
+        emit changed();
+    }
+
+    scheduleScan();
+}
+
+NetworkTechnology *WifiCollector::wifiTechnology() const
+{
+    return m_manager ? m_manager->getTechnology(QStringLiteral("wifi")) : 0;
 }

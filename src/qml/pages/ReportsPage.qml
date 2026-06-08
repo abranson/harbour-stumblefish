@@ -44,10 +44,6 @@ Page {
                     stumblefish.clearPendingReports()
                 })
             }
-            MenuItem {
-                text: "Refresh"
-                onClicked: stumblefish.refresh()
-            }
         }
 
         header: PageHeader {

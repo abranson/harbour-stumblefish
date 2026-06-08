@@ -18,6 +18,8 @@
 namespace {
 
 const int AutomaticMaxRetries = 5;
+const int MaxWifiObservationAgeMs = 30 * 1000;
+const int MaxBleObservationAgeMs = 30 * 1000;
 
 int age(qint64 reportTimestamp, qint64 seenTimestamp)
 {
@@ -237,6 +239,9 @@ QByteArray Uploader::buildPayload(const QList<Report> &reports, QList<int> *incl
                 object.insert(QStringLiteral("signalStrength"), wifi.signalStrength);
             }
             const int observationAge = age(report.timestampMs, wifi.seenMs);
+            if (observationAge > MaxWifiObservationAgeMs) {
+                continue;
+            }
             if (observationAge > 0) {
                 object.insert(QStringLiteral("age"), observationAge);
             }
@@ -288,7 +293,8 @@ QByteArray Uploader::buildPayload(const QList<Report> &reports, QList<int> *incl
             if (ble.signalStrength < 0) {
                 object.insert(QStringLiteral("signalStrength"), ble.signalStrength);
             }
-            if (ble.beaconType != 0) {
+            const bool hasBeaconIdentifiers = !ble.id1.isEmpty() || !ble.id2.isEmpty() || !ble.id3.isEmpty();
+            if (ble.beaconType >= 0 && (ble.beaconType != 0 || hasBeaconIdentifiers)) {
                 object.insert(QStringLiteral("beaconType"), ble.beaconType);
             }
             if (!ble.id1.isEmpty()) {
@@ -299,6 +305,13 @@ QByteArray Uploader::buildPayload(const QList<Report> &reports, QList<int> *incl
             }
             if (!ble.id3.isEmpty()) {
                 object.insert(QStringLiteral("id3"), ble.id3);
+            }
+            const int observationAge = age(report.timestampMs, ble.seenMs);
+            if (observationAge > MaxBleObservationAgeMs) {
+                continue;
+            }
+            if (observationAge > 0) {
+                object.insert(QStringLiteral("age"), observationAge);
             }
             bluetoothBeacons.append(object);
         }

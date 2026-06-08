@@ -25,6 +25,12 @@ Page {
         return enabled ? Theme.highlightColor : Theme.primaryColor
     }
 
+    function bleAvailable() {
+        return stumblefish.status.bleAvailable === undefined
+                || stumblefish.status.bleAvailable === null
+                || !!stumblefish.status.bleAvailable
+    }
+
     SilicaFlickable {
         anchors.fill: parent
         contentHeight: column.height
@@ -155,11 +161,13 @@ Page {
                     id: bleSource
                     width: parent.width / 3
                     spacing: Theme.paddingSmall
+                    opacity: bleAvailable() ? 1.0 : Theme.opacityLow
 
                     IconButton {
                         anchors.horizontalCenter: parent.horizontalCenter
+                        enabled: bleAvailable()
                         icon.source: "image://theme/icon-m-bluetooth"
-                        icon.highlighted: !!stumblefish.settings.bleEnabled
+                        icon.highlighted: !!stumblefish.settings.bleEnabled && bleAvailable()
                         onClicked: stumblefish.setSourceEnabled("ble", !stumblefish.settings.bleEnabled)
                     }
 
@@ -167,7 +175,7 @@ Page {
                         width: parent.width
                         text: "BLE"
                         horizontalAlignment: Text.AlignHCenter
-                        color: sourceLabelColor(!!stumblefish.settings.bleEnabled, true)
+                        color: sourceLabelColor(!!stumblefish.settings.bleEnabled, bleAvailable())
                         font.pixelSize: Theme.fontSizeSmall
                     }
                 }
