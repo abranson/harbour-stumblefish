@@ -11,6 +11,7 @@
 #include <QVariantList>
 #include <QVariantMap>
 
+#include "batterymonitor.h"
 #include "blescanner.h"
 #include "cellcollector.h"
 #include "geoclueposition.h"
@@ -76,6 +77,7 @@ private:
     bool autoUploadNetworkAllowed(QString *reason = 0) const;
     bool collectionAllowed() const;
     QString effectiveMode() const;
+    bool activeBackgroundPausedForBattery() const;
     QString collectionStateMessage() const;
     QString noSourceMessage() const;
     bool statusNotificationShouldBeVisible() const;
@@ -99,6 +101,7 @@ private:
     WifiCollector m_wifi;
     CellCollector m_cell;
     BleScanner m_ble;
+    BatteryMonitor m_battery;
     NetworkManager *m_networkManager;
     Uploader m_uploader;
     QDBusServiceWatcher m_clientWatcher;

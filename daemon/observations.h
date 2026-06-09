@@ -43,7 +43,7 @@ struct CellObservation
     int mobileCountryCode;
     int mobileNetworkCode;
     int locationAreaCode;
-    int cellId;
+    qint64 cellId;
     int primaryScramblingCode;
     int asu;
     int timingAdvance;

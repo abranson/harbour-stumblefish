@@ -210,6 +210,11 @@ void StumblefishClient::setAllowBackgroundDaemon(bool enabled)
     setSetting(QStringLiteral("allowBackgroundDaemon"), enabled);
 }
 
+void StumblefishClient::setPauseActiveBackgroundOnLowBattery(bool enabled)
+{
+    setSetting(QStringLiteral("pauseActiveBackgroundOnLowBattery"), enabled);
+}
+
 void StumblefishClient::setStatusNotificationsEnabled(bool enabled)
 {
     setSetting(QStringLiteral("statusNotificationsEnabled"), enabled);

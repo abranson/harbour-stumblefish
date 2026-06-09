@@ -9,13 +9,14 @@ QMAKE_LFLAGS += -pie
 QT -= gui
 QT += core dbus network positioning sql
 
-PKGCONFIG += connman-qt5 nemonotifications-qt5 qofonoext
+PKGCONFIG += connman-qt5 nemonotifications-qt5 qofonoext systemsettings
 
 INCLUDEPATH += . ../common
 DEFINES += APP_VERSION=\\\"$$VERSION\\\"
 
 SOURCES += \
     main.cpp \
+    batterymonitor.cpp \
     blescanner.cpp \
     cellcollector.cpp \
     geoclueposition.cpp \
@@ -27,6 +28,7 @@ SOURCES += \
     wificollector.cpp
 
 HEADERS += \
+    batterymonitor.h \
     blescanner.h \
     cellcollector.h \
     geoclueposition.h \

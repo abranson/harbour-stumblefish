@@ -20,6 +20,7 @@ BuildRequires:  pkgconfig(connman-qt5)
 BuildRequires:  pkgconfig(nemonotifications-qt5)
 BuildRequires:  pkgconfig(qofonoext)
 BuildRequires:  pkgconfig(sailfishapp)
+BuildRequires:  pkgconfig(systemsettings)
 BuildRequires:  desktop-file-utils
 Requires:       sailfishsilica-qt5 >= 0.10.9
 

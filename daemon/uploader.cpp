@@ -44,6 +44,11 @@ bool isPositiveValue(int value)
     return value != INT_MAX && value > 0;
 }
 
+bool isPositiveCellId(qint64 value)
+{
+    return value > 0;
+}
+
 bool isUint16(int value)
 {
     return isKnownValue(value) && value <= 65535;
@@ -84,14 +89,14 @@ bool hasEnoughCellData(const CellObservation &cell)
     }
 
     if (cell.radioType == QStringLiteral("gsm")) {
-        return isPositiveValue(cell.cellId)
+        return isPositiveCellId(cell.cellId)
                 || isPositiveUint16(cell.locationAreaCode);
     }
 
     if (cell.radioType == QStringLiteral("wcdma")
             || cell.radioType == QStringLiteral("lte")
             || cell.radioType == QStringLiteral("nr")) {
-        return isPositiveValue(cell.cellId)
+        return isPositiveCellId(cell.cellId)
                 || isPositiveUint16(cell.locationAreaCode)
                 || isUint16(cell.primaryScramblingCode);
     }
@@ -265,8 +270,8 @@ QByteArray Uploader::buildPayload(const QList<Report> &reports, QList<int> *incl
                          cell.mobileNetworkCode);
             insertPositiveUint16(&object, QStringLiteral("locationAreaCode"),
                                  cell.locationAreaCode);
-            if (isPositiveValue(cell.cellId)) {
-                object.insert(QStringLiteral("cellId"), cell.cellId);
+            if (isPositiveCellId(cell.cellId)) {
+                object.insert(QStringLiteral("cellId"), static_cast<double>(cell.cellId));
             }
             insertUint16(&object, QStringLiteral("primaryScramblingCode"),
                          cell.primaryScramblingCode);

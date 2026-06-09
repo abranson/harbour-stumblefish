@@ -26,6 +26,7 @@ const qint64 AutoUploadNetworkRetryMs = 15 * 60 * 1000;
 const int AutoUploadMaxRetries = 5;
 const qint64 PruneIntervalMs = 24 * 60 * 60 * 1000;
 const int AppLifecycleQuitDelayMs = 3000;
+const int LowBatteryThresholdPercentage = 20;
 const double MinimumDuplicateDistanceMeters = 30.0;
 const char ServiceUnitName[] = "harbour-stumblefishd.service";
 const char NotificationOpenAction[] = "default";
@@ -124,6 +125,8 @@ Service::Service(QObject *parent)
     connect(&m_wifi, SIGNAL(changed()), this, SLOT(emitStatus()));
     connect(&m_cell, SIGNAL(changed()), this, SLOT(sourceStateChanged()));
     connect(&m_ble, SIGNAL(changed()), this, SLOT(emitStatus()));
+    connect(&m_battery, &BatteryMonitor::changed,
+            this, &Service::sourceStateChanged);
     connect(&m_storage, SIGNAL(changed()), this, SLOT(storageChanged()));
     connect(&m_uploader, SIGNAL(uploadFinished(bool,QString)), this, SLOT(uploaderFinished(bool,QString)));
     connect(m_networkManager, SIGNAL(connectedChanged()), this, SLOT(scheduleAutoUpload()));
@@ -196,6 +199,11 @@ QVariantMap Service::status() const
                m_settings.autoUploadEnabled() && m_settings.lastAutoUploadMs() > 0
                ? m_settings.lastAutoUploadMs() + AutoUploadIntervalMs : 0);
     map.insert(QStringLiteral("appOpenClientCount"), m_appClients.count());
+    map.insert(QStringLiteral("batteryAvailable"), m_battery.available());
+    map.insert(QStringLiteral("batteryChargePercentage"), m_battery.chargePercentage());
+    map.insert(QStringLiteral("batteryPluggedIn"), m_battery.pluggedIn());
+    map.insert(QStringLiteral("activeBackgroundPausedOnLowBattery"),
+               activeBackgroundPausedForBattery());
 
     const PositionFix fix = m_position.lastFix();
     map.insert(QStringLiteral("hasFix"), fix.valid);
@@ -492,7 +500,19 @@ bool Service::collectionAllowed() const
 
 QString Service::effectiveMode() const
 {
-    return !m_appClients.isEmpty() ? QStringLiteral("active") : m_settings.mode();
+    if (!m_appClients.isEmpty()) {
+        return QStringLiteral("active");
+    }
+
+    return activeBackgroundPausedForBattery() ? QStringLiteral("passive") : m_settings.mode();
+}
+
+bool Service::activeBackgroundPausedForBattery() const
+{
+    return m_appClients.isEmpty()
+            && m_settings.mode() == QStringLiteral("active")
+            && m_settings.pauseActiveBackgroundOnLowBattery()
+            && m_battery.lowAndUnplugged(LowBatteryThresholdPercentage);
 }
 
 bool Service::positionShouldBeActive() const
@@ -524,6 +544,10 @@ QString Service::collectionStateMessage() const
 
     if (!anySourceEnabled()) {
         return noSourceMessage();
+    }
+
+    if (activeBackgroundPausedForBattery()) {
+        return QStringLiteral("Active background paused for low battery");
     }
 
     if (!m_position.locationEnabled()) {

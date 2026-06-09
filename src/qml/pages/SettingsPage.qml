@@ -167,6 +167,16 @@ Page {
                 onClicked: stumblefish.setMode(checked ? "active" : "passive")
             }
 
+            TextSwitch {
+                text: "Pause active mode on low battery"
+                description: checked
+                             ? "Stops active background fixes below 20% unless plugged in"
+                             : "Keeps active background fixes running below 20%"
+                checked: !hasSetting("pauseActiveBackgroundOnLowBattery")
+                         || !!stumblefish.settings.pauseActiveBackgroundOnLowBattery
+                onClicked: stumblefish.setPauseActiveBackgroundOnLowBattery(checked)
+            }
+
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin

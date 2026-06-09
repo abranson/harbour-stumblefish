@@ -116,7 +116,7 @@ QVariantList cellsToList(const QList<CellObservation> &observations)
         map.insert(QStringLiteral("mobileCountryCode"), cell.mobileCountryCode);
         map.insert(QStringLiteral("mobileNetworkCode"), cell.mobileNetworkCode);
         map.insert(QStringLiteral("locationAreaCode"), cell.locationAreaCode);
-        map.insert(QStringLiteral("cellId"), cell.cellId);
+        map.insert(QStringLiteral("cellId"), QVariant::fromValue(cell.cellId));
         map.insert(QStringLiteral("primaryScramblingCode"), cell.primaryScramblingCode);
         map.insert(QStringLiteral("asu"), cell.asu);
         map.insert(QStringLiteral("timingAdvance"), cell.timingAdvance);
@@ -1487,7 +1487,7 @@ QList<CellObservation> Storage::cellsForReport(int reportId) const
         cell.mobileCountryCode = query.value(1).toInt();
         cell.mobileNetworkCode = query.value(2).toInt();
         cell.locationAreaCode = query.value(3).toInt();
-        cell.cellId = query.value(4).toInt();
+        cell.cellId = query.value(4).toLongLong();
         cell.primaryScramblingCode = query.value(5).toInt();
         cell.asu = query.value(6).isNull() ? -1 : query.value(6).toInt();
         cell.timingAdvance = query.value(7).isNull() ? -1 : query.value(7).toInt();

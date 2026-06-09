@@ -112,9 +112,21 @@ int knownCellProperty(const QOfonoExtCell *cell, const char *name)
     return ok ? value : QOfonoExtCell::InvalidValue;
 }
 
+qint64 knownCellStringProperty(const QOfonoExtCell *cell, const char *name)
+{
+    bool ok = false;
+    const qint64 value = cell->property(name).toString().trimmed().toLongLong(&ok);
+    return ok ? value : -1;
+}
+
 bool hasCellIdentity(int value)
 {
     return value != QOfonoExtCell::InvalidValue && value > 0;
+}
+
+bool hasCellIdentity(qint64 value)
+{
+    return value > 0;
 }
 
 bool hasMobileCountryCode(int value)
@@ -276,6 +288,7 @@ QList<CellObservation> CellCollector::observations() const
             observation.arfcn = knownCellValue(cell->earfcn());
         } else if (type == QStringLiteral("nr")) {
             observation.locationAreaCode = knownCellValue(cell->tac());
+            observation.cellId = knownCellStringProperty(cell.data(), "nci");
             observation.primaryScramblingCode = knownCellValue(cell->pci());
             observation.arfcn = knownCellValue(knownCellProperty(cell.data(), "nrarfcn"));
         } else {
