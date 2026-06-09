@@ -1,3 +1,8 @@
+* Tue Jun 09 2026 Andrew Branson <andrew@example.invalid> 0.1.5-1
+- Pause active background collection on low battery.
+- Preserve 64-bit NR cell identity when available at runtime.
+- Add Sailfish Chum package metadata.
+
 * Mon Jun 08 2026 Andrew Branson <andrew@example.invalid> 0.1.4-1
 - Refresh Wi-Fi and BLE observations before reports.
 - Filter stale observations and unavailable sources more consistently.

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 Name:       harbour-stumblefish
 Summary:    Location report collector for Sailfish OS
-Version:    0.1.4
+Version:    0.1.5
 Release:    1
 License:    MIT
 Group:      Qt/Qt
@@ -28,6 +28,20 @@ Requires:       sailfishsilica-qt5 >= 0.10.9
 Stumblefish collects opt-in Wi-Fi, cell tower, and Bluetooth beacon
 observations with a position fix, stores the reports locally, and can submit
 them to a configurable Geosubmit endpoint. BeaconDB is the default endpoint.
+%if 0%{?_chum}
+Title: Stumblefish
+Type: desktop-application
+DeveloperName: Andrew Branson
+PackagedBy: Andrew Branson
+Categories:
+ - Utility
+Custom:
+  Repo: https://github.com/abranson/harbour-stumblefish
+PackageIcon: https://github.com/abranson/harbour-stumblefish/raw/master/src/icons/172x172/apps/harbour-stumblefish.png
+Links:
+  Homepage: https://github.com/abranson/harbour-stumblefish
+  Bugtracker: https://github.com/abranson/harbour-stumblefish/issues
+%endif
 
 %prep
 %autosetup
