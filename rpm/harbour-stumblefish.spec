@@ -38,6 +38,11 @@ Categories:
 Custom:
   Repo: https://github.com/abranson/harbour-stumblefish
 PackageIcon: https://github.com/abranson/harbour-stumblefish/raw/master/src/icons/172x172/apps/harbour-stumblefish.png
+Screenshots:
+ - https://github.com/abranson/harbour-stumblefish/raw/master/Screenshot1.png
+ - https://github.com/abranson/harbour-stumblefish/raw/master/Screenshot2.png
+ - https://github.com/abranson/harbour-stumblefish/raw/master/Screenshot3.png
+ - https://github.com/abranson/harbour-stumblefish/raw/master/Screenshot4.png
 Links:
   Homepage: https://github.com/abranson/harbour-stumblefish
   Bugtracker: https://github.com/abranson/harbour-stumblefish/issues

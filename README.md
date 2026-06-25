@@ -13,6 +13,13 @@ you and everyone else near you.
 It is heavily inspired by NeoStumbler. `https://github.com/mjaakko/NeoStumbler`.
 Many thanks to them for a great tool.
 
+## Screenshots
+
+<img src="Screenshot1.png" alt="Stumblefish about page" width="180">
+<img src="Screenshot2.png" alt="Stumblefish report map" width="180">
+<img src="Screenshot3.png" alt="Stumblefish report details" width="180">
+<img src="Screenshot4.png" alt="Stumblefish settings" width="180">
+
 ## Status
 
 Stumblefish is an early usable Sailfish OS app and user daemon.
@@ -22,8 +29,13 @@ Stumblefish is an early usable Sailfish OS app and user daemon.
 - App and user daemon under the `org.stumblefish` namespace.
 - Active and passive collection modes for background operation.
 - The app UI always requests active collection while it is open.
+- Active background collection can pause automatically below 20% battery unless
+  the device is plugged in.
 - Wi-Fi and cell collection are enabled by default.
-- BLE beacon collection is implemented but disabled by default.
+- Cell tower collection includes available LTE and NR neighbour metadata.
+- BLE beacon collection is implemented but disabled by default. It only keeps
+  devices with recognised beacon payloads, rather than arbitrary Bluetooth
+  devices.
 - Reports are stored in SQLite before upload.
 - Reports are only collected from current GNSS-backed fixes.
 - Duplicate suppression avoids storing repeated observations from the same
@@ -32,7 +44,7 @@ Stumblefish is an early usable Sailfish OS app and user daemon.
 - Automatic upload is available, runs every 8 hours, and is disabled by
   default.
 - Automatic upload is Wi-Fi-only by default, with an option to allow other
-  networks.is 
+  networks.
 - Pending and failed reports can be inspected, retried, deleted, or cleared.
 - A map view shows all retained reports using viewport-only aggregated cells.
 - OSM tiles are used by default with visible attribution, a stable User-Agent,
@@ -53,10 +65,13 @@ Stumblefish is an early usable Sailfish OS app and user daemon.
 
 When "Allow background collection" is enabled, the daemon enables its user
 systemd unit so it starts with the user session on boot. Otherwise it is started
-on demand by the app or D-Bus activation and exits when it is no longer needed. 
+on demand by the app or D-Bus activation and exits when it is no longer needed.
 Optionally, the daemon can be configured to keep positioning active so it can
 constantly collect data. Otherwise, it will only do so when another app gets a
 fix. Active mode will really punish your battery life.
+
+By default, active background fixes pause below 20% battery unless the device is
+plugged in.
 
 ## Project Layout
 
