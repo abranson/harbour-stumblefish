@@ -1,27 +1,30 @@
-* Thu Jun 25 2026 Andrew Branson <andrew@example.invalid> 0.1.6-1
+* Thu Jun 25 2026 Andrew Branson <dev@andrewbranson.net> 0.1.7-1
+- Fix the Chum icon
+
+* Thu Jun 25 2026 Andrew Branson <dev@andrewbranson.net> 0.1.6-1
 - Add application screenshots and screenshot metadata.
 
-* Tue Jun 09 2026 Andrew Branson <andrew@example.invalid> 0.1.5-1
+* Tue Jun 09 2026 Andrew Branson <dev@andrewbranson.net> 0.1.5-1
 - Pause active background collection on low battery.
 - Preserve 64-bit NR cell identity when available at runtime.
 - Add Sailfish Chum package metadata.
 
-* Mon Jun 08 2026 Andrew Branson <andrew@example.invalid> 0.1.4-1
+* Mon Jun 08 2026 Andrew Branson <dev@andrewbranson.net> 0.1.4-1
 - Refresh Wi-Fi and BLE observations before reports.
 - Filter stale observations and unavailable sources more consistently.
 - Improve report details and status notification handling.
 
-* Fri Jun 05 2026 Andrew Branson <andrew@example.invalid> 0.1.3-1
+* Fri Jun 05 2026 Andrew Branson <dev@andrewbranson.net> 0.1.3-1
 - Keep cell collection building with older Sailfish SDK targets.
 - Preserve NR neighbour metadata collection when the runtime exposes it.
 
-* Fri Jun 05 2026 Andrew Branson <andrew@example.invalid> 0.1.2-1
+* Fri Jun 05 2026 Andrew Branson <dev@andrewbranson.net> 0.1.2-1
 - Improve BeaconDB report compatibility.
 - Include SSIDs, dBm signals, scan ages, and partial neighbour cell metadata.
 - Add background collection status notifications.
 
-* Sun May 24 2026 Andrew Branson <andrew@example.invalid> 0.1.1-1
+* Sun May 24 2026 Andrew Branson <dev@andrewbranson.net> 0.1.1-1
 - Fix empty-report map access, settings URL saving, and default background mode.
 
-* Tue May 19 2026 Andrew Branson <andrew@example.invalid> 0.1.0-1
+* Tue May 19 2026 Andrew Branson <dev@andrewbranson.net> 0.1.0-1
 - Initial location report collector package.
