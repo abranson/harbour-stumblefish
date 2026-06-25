@@ -1,3 +1,6 @@
+* Thu Jun 25 2026 Andrew Branson <andrew@example.invalid> 0.1.6-1
+- Add application screenshots and screenshot metadata.
+
 * Tue Jun 09 2026 Andrew Branson <andrew@example.invalid> 0.1.5-1
 - Pause active background collection on low battery.
 - Preserve 64-bit NR cell identity when available at runtime.
