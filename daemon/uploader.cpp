@@ -20,6 +20,8 @@ namespace {
 const int AutomaticMaxRetries = 5;
 const int MaxWifiObservationAgeMs = 30 * 1000;
 const int MaxBleObservationAgeMs = 30 * 1000;
+const int InvalidLocationAreaCode = 0xffff;
+const qint64 InvalidCellId = 0x0fffffff;
 
 int age(qint64 reportTimestamp, qint64 seenTimestamp)
 {
@@ -46,7 +48,7 @@ bool isPositiveValue(int value)
 
 bool isPositiveCellId(qint64 value)
 {
-    return value > 0;
+    return value > 0 && value != InvalidCellId;
 }
 
 bool isUint16(int value)
@@ -57,6 +59,18 @@ bool isUint16(int value)
 bool isPositiveUint16(int value)
 {
     return isPositiveValue(value) && value <= 65535;
+}
+
+bool isLocationAreaCode(int value)
+{
+    return isPositiveUint16(value) && value != InvalidLocationAreaCode;
+}
+
+void insertLocationAreaCode(QJsonObject *object, const QString &key, int value)
+{
+    if (isLocationAreaCode(value)) {
+        object->insert(key, value);
+    }
 }
 
 void insertPositiveUint16(QJsonObject *object, const QString &key, int value)
@@ -90,14 +104,14 @@ bool hasEnoughCellData(const CellObservation &cell)
 
     if (cell.radioType == QStringLiteral("gsm")) {
         return isPositiveCellId(cell.cellId)
-                || isPositiveUint16(cell.locationAreaCode);
+                || isLocationAreaCode(cell.locationAreaCode);
     }
 
     if (cell.radioType == QStringLiteral("wcdma")
             || cell.radioType == QStringLiteral("lte")
             || cell.radioType == QStringLiteral("nr")) {
         return isPositiveCellId(cell.cellId)
-                || isPositiveUint16(cell.locationAreaCode)
+                || isLocationAreaCode(cell.locationAreaCode)
                 || isUint16(cell.primaryScramblingCode);
     }
 
@@ -268,8 +282,8 @@ QByteArray Uploader::buildPayload(const QList<Report> &reports, QList<int> *incl
                                  cell.mobileCountryCode);
             insertUint16(&object, QStringLiteral("mobileNetworkCode"),
                          cell.mobileNetworkCode);
-            insertPositiveUint16(&object, QStringLiteral("locationAreaCode"),
-                                 cell.locationAreaCode);
+            insertLocationAreaCode(&object, QStringLiteral("locationAreaCode"),
+                                   cell.locationAreaCode);
             if (isPositiveCellId(cell.cellId)) {
                 object.insert(QStringLiteral("cellId"), static_cast<double>(cell.cellId));
             }

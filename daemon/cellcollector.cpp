@@ -48,6 +48,8 @@ const char OfonoManagerPath[] = "/";
 const char OfonoManagerInterface[] = "org.ofono.Manager";
 const char OfonoSimManagerInterface[] = "org.ofono.SimManager";
 const int QOfonoExtCellNrType = 4;
+const int InvalidLocationAreaCode = 0xffff;
+const qint64 InvalidCellId = 0x0fffffff;
 
 QVariant unwrap(const QVariant &value)
 {
@@ -121,12 +123,14 @@ qint64 knownCellStringProperty(const QOfonoExtCell *cell, const char *name)
 
 bool hasCellIdentity(int value)
 {
-    return value != QOfonoExtCell::InvalidValue && value > 0;
+    return value != QOfonoExtCell::InvalidValue
+            && value > 0
+            && value != InvalidCellId;
 }
 
 bool hasCellIdentity(qint64 value)
 {
-    return value > 0;
+    return value > 0 && value != InvalidCellId;
 }
 
 bool hasMobileCountryCode(int value)
@@ -141,7 +145,7 @@ bool hasMobileNetworkCode(int value)
 
 bool hasLocationAreaCode(int value)
 {
-    return value > 0;
+    return value > 0 && value != InvalidLocationAreaCode;
 }
 
 bool hasPrimaryScramblingCode(int value)
@@ -302,6 +306,12 @@ QList<CellObservation> CellCollector::observations() const
             } else if (type == QStringLiteral("gsm")) {
                 observation.arfcn = knownCellValue(cell->arfcn());
             }
+        }
+        if (!hasLocationAreaCode(observation.locationAreaCode)) {
+            observation.locationAreaCode = -1;
+        }
+        if (!hasCellIdentity(observation.cellId)) {
+            observation.cellId = -1;
         }
 
         if (hasMobileCountryCode(observation.mobileCountryCode)) {
