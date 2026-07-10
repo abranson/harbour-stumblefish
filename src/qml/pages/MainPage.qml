@@ -5,6 +5,8 @@ import Sailfish.Silica 1.0
 Page {
     id: page
 
+    allowedOrientations: Orientation.All
+
     function count(name) {
         var counts = stumblefish.status.counts
         if (counts && counts[name] !== undefined && counts[name] !== null) {
@@ -33,7 +35,7 @@ Page {
 
     SilicaFlickable {
         anchors.fill: parent
-        contentHeight: column.height
+        contentHeight: content.height
 
         PullDownMenu {
             MenuItem {
@@ -50,169 +52,184 @@ Page {
             }
         }
 
-        Column {
-            id: column
-            width: parent.width
-            spacing: Theme.paddingMedium
+        PageHeader {
+            id: header
+            title: "Stumblefish"
+        }
 
-            PageHeader {
-                title: "Stumblefish"
-            }
+        Flow {
+            id: content
+            anchors {
+                top: header.bottom
+                bottom: parent.bottom
+             }
+            width:  (isLandscape ? Screen.height : Screen.width)
+            height: (isLandscape ? Screen.width : Screen.height) - header.height
 
-            SectionHeader {
-                text: "Collection"
-            }
+            Column {
+                width: (isLandscape ? page.width/2 : page.width)
+                spacing: Theme.paddingMedium
 
-            DetailItem {
-                label: "Status"
-                value: stumblefish.status.collectionStateMessage
-            }
+                SectionHeader {
+                    text: "Collection"
+                }
 
-            DetailItem {
-                label: "Location"
-                value: stumblefish.status.locationEnabled ? "enabled" : "disabled"
-            }
+                DetailItem {
+                    label: "Status"
+                    value: stumblefish.status.collectionStateMessage
+                }
 
-            DetailItem {
-                label: "Cell"
-                value: stumblefish.status.cellAvailable
-                       ? (stumblefish.status.cellStatus || "available")
-                       : (stumblefish.status.cellUnavailableReason || "unavailable")
-            }
+                DetailItem {
+                    label: "Location"
+                    value: stumblefish.status.locationEnabled ? "enabled" : "disabled"
+                }
 
-            DetailItem {
-                label: "Position"
-                value: stumblefish.status.positionStatus || "unknown"
-            }
+                DetailItem {
+                    label: "Cell"
+                    value: stumblefish.status.cellAvailable
+                           ? (stumblefish.status.cellStatus || "available")
+                           : (stumblefish.status.cellUnavailableReason || "unavailable")
+                }
 
-            DetailItem {
-                label: "Fix"
-                value: stumblefish.status.hasFix
-                       ? stumblefish.status.latitude.toFixed(5) + ", "
-                         + stumblefish.status.longitude.toFixed(5)
-                         + " ±" + Math.round(stumblefish.status.accuracy) + " m"
-                       : "none"
-            }
+                DetailItem {
+                    label: "Position"
+                    value: stumblefish.status.positionStatus || "unknown"
+                }
 
-            DetailItem {
-                label: "GNSS"
-                value: stumblefish.status.gnssBackedFix
-                       ? (stumblefish.status.satellitesInUse > 0
-                          ? "backed by " + stumblefish.status.satellitesInUse + " satellites"
-                          : "backed by GNSS")
-                       : "waiting for satellites"
-            }
+                DetailItem {
+                    label: "Fix"
+                    value: stumblefish.status.hasFix
+                           ? stumblefish.status.latitude.toFixed(5) + ", "
+                             + stumblefish.status.longitude.toFixed(5)
+                             + " ±" + Math.round(stumblefish.status.accuracy) + " m"
+                           : "none"
+                }
 
-            Row {
-                id: sourceRow
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                height: Math.max(wifiSource.implicitHeight,
-                                 cellSource.implicitHeight,
-                                 bleSource.implicitHeight)
+                DetailItem {
+                    label: "GNSS"
+                    value: stumblefish.status.gnssBackedFix
+                           ? (stumblefish.status.satellitesInUse > 0
+                              ? "backed by " + stumblefish.status.satellitesInUse + " satellites"
+                              : "backed by GNSS")
+                           : "waiting for satellites"
+                }
 
-                Column {
-                    id: wifiSource
-                    width: parent.width / 3
-                    spacing: Theme.paddingSmall
+                Row {
+                    id: sourceRow
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    height: Math.max(wifiSource.implicitHeight,
+                                     cellSource.implicitHeight,
+                                     bleSource.implicitHeight)
 
-                    IconButton {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        icon.source: "image://theme/icon-m-wlan"
-                        icon.highlighted: !!stumblefish.settings.wifiEnabled
-                        onClicked: stumblefish.setSourceEnabled("wifi", !stumblefish.settings.wifiEnabled)
+                    Column {
+                        id: wifiSource
+                        width: parent.width / 3
+                        spacing: Theme.paddingSmall
+
+                        IconButton {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            icon.source: "image://theme/icon-m-wlan"
+                            icon.highlighted: !!stumblefish.settings.wifiEnabled
+                            onClicked: stumblefish.setSourceEnabled("wifi", !stumblefish.settings.wifiEnabled)
+                        }
+
+                        Label {
+                            width: parent.width
+                            text: "Wi-Fi"
+                            horizontalAlignment: Text.AlignHCenter
+                            color: sourceLabelColor(!!stumblefish.settings.wifiEnabled, true)
+                            font.pixelSize: Theme.fontSizeSmall
+                        }
                     }
 
-                    Label {
-                        width: parent.width
-                        text: "Wi-Fi"
-                        horizontalAlignment: Text.AlignHCenter
-                        color: sourceLabelColor(!!stumblefish.settings.wifiEnabled, true)
-                        font.pixelSize: Theme.fontSizeSmall
+                    Column {
+                        id: cellSource
+                        width: parent.width / 3
+                        spacing: Theme.paddingSmall
+                        opacity: stumblefish.status.cellAvailable ? 1.0 : Theme.opacityLow
+
+                        IconButton {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            enabled: !!stumblefish.status.cellAvailable
+                            icon.source: "image://theme/icon-m-mobile-network"
+                            icon.highlighted: !!stumblefish.settings.cellEnabled && !!stumblefish.status.cellAvailable
+                            onClicked: stumblefish.setSourceEnabled("cell", !stumblefish.settings.cellEnabled)
+                        }
+
+                        Label {
+                            width: parent.width
+                            text: "Cell"
+                            horizontalAlignment: Text.AlignHCenter
+                            color: sourceLabelColor(!!stumblefish.settings.cellEnabled,
+                                                    !!stumblefish.status.cellAvailable)
+                            font.pixelSize: Theme.fontSizeSmall
+                            truncationMode: TruncationMode.Fade
+                        }
+                    }
+
+                    Column {
+                        id: bleSource
+                        width: parent.width / 3
+                        spacing: Theme.paddingSmall
+                        opacity: bleAvailable() ? 1.0 : Theme.opacityLow
+
+                        IconButton {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            enabled: bleAvailable()
+                            icon.source: "image://theme/icon-m-bluetooth"
+                            icon.highlighted: !!stumblefish.settings.bleEnabled && bleAvailable()
+                            onClicked: stumblefish.setSourceEnabled("ble", !stumblefish.settings.bleEnabled)
+                        }
+
+                        Label {
+                            width: parent.width
+                            text: "BLE"
+                            horizontalAlignment: Text.AlignHCenter
+                            color: sourceLabelColor(!!stumblefish.settings.bleEnabled, bleAvailable())
+                            font.pixelSize: Theme.fontSizeSmall
+                        }
                     }
                 }
 
-                Column {
-                    id: cellSource
-                    width: parent.width / 3
-                    spacing: Theme.paddingSmall
-                    opacity: stumblefish.status.cellAvailable ? 1.0 : Theme.opacityLow
+            }
+            Column {
+                width: (isLandscape ? page.width/2 : page.width)
+                spacing: Theme.paddingMedium
 
-                    IconButton {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        enabled: !!stumblefish.status.cellAvailable
-                        icon.source: "image://theme/icon-m-mobile-network"
-                        icon.highlighted: !!stumblefish.settings.cellEnabled && !!stumblefish.status.cellAvailable
-                        onClicked: stumblefish.setSourceEnabled("cell", !stumblefish.settings.cellEnabled)
-                    }
-
-                    Label {
-                        width: parent.width
-                        text: "Cell"
-                        horizontalAlignment: Text.AlignHCenter
-                        color: sourceLabelColor(!!stumblefish.settings.cellEnabled,
-                                                !!stumblefish.status.cellAvailable)
-                        font.pixelSize: Theme.fontSizeSmall
-                        truncationMode: TruncationMode.Fade
-                    }
+                SectionHeader {
+                    text: "Reports"
                 }
 
-                Column {
-                    id: bleSource
-                    width: parent.width / 3
-                    spacing: Theme.paddingSmall
-                    opacity: bleAvailable() ? 1.0 : Theme.opacityLow
-
-                    IconButton {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        enabled: bleAvailable()
-                        icon.source: "image://theme/icon-m-bluetooth"
-                        icon.highlighted: !!stumblefish.settings.bleEnabled && bleAvailable()
-                        onClicked: stumblefish.setSourceEnabled("ble", !stumblefish.settings.bleEnabled)
-                    }
-
-                    Label {
-                        width: parent.width
-                        text: "BLE"
-                        horizontalAlignment: Text.AlignHCenter
-                        color: sourceLabelColor(!!stumblefish.settings.bleEnabled, bleAvailable())
-                        font.pixelSize: Theme.fontSizeSmall
-                    }
+                DetailItem {
+                    label: "Pending"
+                    value: count("pending")
                 }
-            }
+                DetailItem {
+                    label: "Uploaded"
+                    value: count("uploaded")
+                }
+                DetailItem {
+                    label: "Failed"
+                    value: count("failed")
+                }
+                DetailItem {
+                    label: "Last report"
+                    value: timeText(stumblefish.status.lastCollectedMs)
+                }
 
-            SectionHeader {
-                text: "Reports"
-            }
+                Button {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: "View reports"
+                    onClicked: pageStack.push(Qt.resolvedUrl("ReportsPage.qml"))
+                }
 
-            DetailItem {
-                label: "Pending"
-                value: count("pending")
-            }
-            DetailItem {
-                label: "Uploaded"
-                value: count("uploaded")
-            }
-            DetailItem {
-                label: "Failed"
-                value: count("failed")
-            }
-            DetailItem {
-                label: "Last report"
-                value: timeText(stumblefish.status.lastCollectedMs)
-            }
-
-            Button {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "View reports"
-                onClicked: pageStack.push(Qt.resolvedUrl("ReportsPage.qml"))
-            }
-
-            Button {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "View map"
-                enabled: count("total") > 0
-                onClicked: pageStack.push(Qt.resolvedUrl("MapPage.qml"))
+                Button {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: "View map"
+                    enabled: count("total") > 0
+                    onClicked: pageStack.push(Qt.resolvedUrl("MapPage.qml"))
+                }
             }
         }
     }
