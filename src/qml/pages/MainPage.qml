@@ -31,6 +31,17 @@ Page {
                 || !!stumblefish.status.bleAvailable
     }
 
+    property Page mapPage: null
+
+    onStatusChanged: { // attach map page if available
+        if (mapPage !== null) return
+        if (page.status == PageStatus.Active) {
+            if (count("total") > 0) {
+                mapPage = pageStack.pushAttached(Qt.resolvedUrl("MapPage.qml"))
+            }
+        }
+    }
+
     SilicaFlickable {
         anchors.fill: parent
         contentHeight: column.height
@@ -206,13 +217,6 @@ Page {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "View reports"
                 onClicked: pageStack.push(Qt.resolvedUrl("ReportsPage.qml"))
-            }
-
-            Button {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "View map"
-                enabled: count("total") > 0
-                onClicked: pageStack.push(Qt.resolvedUrl("MapPage.qml"))
             }
         }
     }
