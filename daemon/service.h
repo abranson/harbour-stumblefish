@@ -71,6 +71,7 @@ private Q_SLOTS:
     void quitForAppLifecycle();
     void statusNotificationClicked();
     void statusNotificationClosed(uint reason);
+    void closePassiveStatusNotification();
 
 private:
     bool anySourceEnabled() const;
@@ -84,6 +85,9 @@ private:
     bool statusNotificationHasTurnOffAction() const;
     bool positionShouldBeActive() const;
     void syncUserServiceEnabled() const;
+    QString statusNotificationBody(const QString &body) const;
+    bool statusNotificationShouldLingerForPassiveFix() const;
+    void publishStatusNotification(const QString &body);
     void updateStatusNotification(const QString &body);
     void closeStatusNotification();
     void closeStoredStatusNotifications();
@@ -108,6 +112,7 @@ private:
     QTimer m_autoUploadTimer;
     QTimer m_pruneTimer;
     QTimer m_lifecycleQuitTimer;
+    QTimer m_passiveStatusNotificationTimer;
     QSet<QString> m_appClients;
     QString m_lastMessage;
     QString m_lastStatusNotificationBody;

@@ -26,6 +26,7 @@ const qint64 AutoUploadNetworkRetryMs = 15 * 60 * 1000;
 const int AutoUploadMaxRetries = 5;
 const qint64 PruneIntervalMs = 24 * 60 * 60 * 1000;
 const int AppLifecycleQuitDelayMs = 3000;
+const int PassiveStatusNotificationDelayMs = 3000;
 const int LowBatteryThresholdPercentage = 20;
 const double MinimumDuplicateDistanceMeters = 30.0;
 const char ServiceUnitName[] = "harbour-stumblefishd.service";
@@ -135,9 +136,12 @@ Service::Service(QObject *parent)
     connect(&m_autoUploadTimer, SIGNAL(timeout()), this, SLOT(autoUploadDueReports()));
     connect(&m_pruneTimer, SIGNAL(timeout()), this, SLOT(pruneDueReports()));
     connect(&m_lifecycleQuitTimer, SIGNAL(timeout()), this, SLOT(quitForAppLifecycle()));
+    connect(&m_passiveStatusNotificationTimer, SIGNAL(timeout()),
+            this, SLOT(closePassiveStatusNotification()));
     connect(&m_clientWatcher, SIGNAL(serviceUnregistered(QString)),
             this, SLOT(clientServiceUnregistered(QString)));
     m_lifecycleQuitTimer.setSingleShot(true);
+    m_passiveStatusNotificationTimer.setSingleShot(true);
 
     QDBusConnection bus = QDBusConnection::sessionBus();
     m_clientWatcher.setConnection(bus);
@@ -791,16 +795,33 @@ bool Service::statusNotificationHasTurnOffAction() const
     return m_appClients.isEmpty() && m_settings.mode() != QStringLiteral("passive");
 }
 
-void Service::updateStatusNotification(const QString &body)
+QString Service::statusNotificationBody(const QString &body) const
 {
-    if (!statusNotificationShouldBeVisible()) {
-        closeStatusNotification();
-        return;
+    if (body == QStringLiteral("Gathering reports")) {
+        return QStringLiteral("Gathering reports in the background");
     }
 
-    const QString notificationBody = body.isEmpty()
+    return body.isEmpty()
             ? QStringLiteral("Collector status unavailable")
             : body;
+}
+
+bool Service::statusNotificationShouldLingerForPassiveFix() const
+{
+    return m_statusNotificationVisible
+            && !m_statusNotificationDismissed
+            && m_settings.statusNotificationsEnabled()
+            && collectionAllowed()
+            && m_appClients.isEmpty()
+            && m_settings.mode() == QStringLiteral("passive")
+            && anySourceEnabled()
+            && m_position.locationEnabled()
+            && m_position.status() == QStringLiteral("passive")
+            && !m_position.lastFix().valid;
+}
+
+void Service::publishStatusNotification(const QString &notificationBody)
+{
     const bool hasTurnOffAction = statusNotificationHasTurnOffAction();
     const bool notificationChanged =
             m_lastStatusNotificationBody != notificationBody
@@ -862,8 +883,29 @@ void Service::updateStatusNotification(const QString &body)
     m_statusNotification->publish();
 }
 
+void Service::updateStatusNotification(const QString &body)
+{
+    if (!statusNotificationShouldBeVisible()) {
+        if (statusNotificationShouldLingerForPassiveFix()) {
+            publishStatusNotification(QStringLiteral("Waiting for passive location fix"));
+            if (!m_passiveStatusNotificationTimer.isActive()) {
+                m_passiveStatusNotificationTimer.start(PassiveStatusNotificationDelayMs);
+            }
+        } else {
+            m_passiveStatusNotificationTimer.stop();
+            closeStatusNotification();
+        }
+        return;
+    }
+
+    m_passiveStatusNotificationTimer.stop();
+    publishStatusNotification(statusNotificationBody(body));
+}
+
 void Service::closeStatusNotification()
 {
+    m_passiveStatusNotificationTimer.stop();
+
     if (!m_statusNotificationVisible
             && (!m_statusNotification || m_statusNotification->replacesId() == 0)) {
         return;
@@ -921,6 +963,13 @@ void Service::statusNotificationClosed(uint reason)
     } else if (reason == Notification::Expired) {
         m_statusNotificationVisible = false;
         m_statusNotificationDismissed = false;
+    }
+}
+
+void Service::closePassiveStatusNotification()
+{
+    if (m_lastStatusNotificationBody == QStringLiteral("Waiting for passive location fix")) {
+        closeStatusNotification();
     }
 }
 
