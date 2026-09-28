@@ -10,3 +10,6 @@ Name=Stumblefish
 OrganizationName=org.stumblefish
 ApplicationName=harbour-stumblefish
 Permissions=Location;Internet;Bluetooth;Stumblefish
+
+[X-HarbourBackup]
+BackupPathList=.config/org.stumblefish/harbour-stumblefish.conf:.local/share/org.stumblefish/harbour-stumblefish/

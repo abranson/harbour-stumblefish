@@ -56,10 +56,25 @@ Page {
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
+                text: qsTr("Contributors:") + "\nnephros"
+                color: Theme.secondaryHighlightColor
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.Wrap
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
                 text: "Version " + (appVersion || "")
                 color: Theme.secondaryColor
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
+            }
+
+            Button {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: qsTr("Translate on Weblate")
+                onClicked: Qt.openUrlExternally("https://hosted.weblate.org/projects/harbour-stumblefish/")
             }
 
             Image {

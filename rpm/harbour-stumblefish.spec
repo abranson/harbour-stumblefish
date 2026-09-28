@@ -46,6 +46,7 @@ Screenshots:
  - https://github.com/abranson/harbour-stumblefish/raw/master/Screenshot4.png
 Links:
   Homepage: https://github.com/abranson/harbour-stumblefish
+  Translate: https://hosted.weblate.org/projects/harbour-stumblefish/
   Bugtracker: https://github.com/abranson/harbour-stumblefish/issues
 %endif
 

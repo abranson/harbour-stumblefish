@@ -24,12 +24,22 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/AboutPage.qml" line="80"/>
+        <location filename="../qml/pages/AboutPage.qml" line="59"/>
+        <source>Contributors:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/AboutPage.qml" line="76"/>
+        <source>Translate on Weblate</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/AboutPage.qml" line="95"/>
         <source>The Motorcycle Fish says:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/AboutPage.qml" line="91"/>
+        <location filename="../qml/pages/AboutPage.qml" line="106"/>
         <source>&quot;If you&apos;re gonna lead people, you have to have somewhere to go.&quot;</source>
         <translation type="unfinished"></translation>
     </message>

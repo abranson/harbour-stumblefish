@@ -73,6 +73,17 @@ fix. Active mode will really punish your battery life.
 By default, active background fixes pause below 20% battery unless the device is
 plugged in.
 
+## Backup and Restore
+
+Stumblefish supports [My Backup](https://github.com/monich/harbour-mybackup).
+Select Stumblefish in My Backup to include its settings and report database in
+Sailfish OS backups. These can be restored on another device, including report
+history and upload status. Map tiles are cached separately and are not backed up.
+
+Disable background collection and close Stumblefish before backing up or
+restoring, so the daemon is not writing to the database. After restoring, start
+Stumblefish to load the saved settings and reports.
+
 ## Project Layout
 
 - `src/` contains the Sailfish Silica app, QML pages, icons, and client-side
@@ -82,9 +93,19 @@ plugged in.
 - `common/` contains shared constants.
 - `rpm/` contains Sailfish RPM packaging.
 
+## Translations
+
+Help translate Stumblefish on
+[Weblate](https://hosted.weblate.org/projects/harbour-stumblefish/).
+You can improve an existing translation or add a new language. Translation
+contributions are submitted to this repository as pull requests for review.
+
 ## Credits
 
 Stumblefish is heavily based on NeoStumbler. Thanks to the NeoStumbler project
 and its contributors.
+
+Thanks to [nephros](https://github.com/nephros) for translation support and
+improvements to the cover and map.
 
 The Motorcycle Fish is inspired by The Motorcycle Boy from Rumble Fish, by S.E.Hinton.
