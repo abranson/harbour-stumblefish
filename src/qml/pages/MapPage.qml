@@ -508,9 +508,16 @@ Page {
 
                     var heat = Math.max(0, Math.min(1, Number(cell.heat)))
                     var alpha = Math.min(0.78, 0.22 + heat * 0.48)
+                    var recent = (Date.now() - cell.latestTimestampMs < 1000*60*60*24)
+                    var fresh = cell.pendingCount > 0
                     ctx.fillStyle = "rgba(115, 60, 210, " + alpha + ")"
-                    ctx.strokeStyle = "rgba(235, 225, 255, 0.65)"
-                    ctx.lineWidth = 1
+                    ctx.strokeStyle = fresh
+                            ? "rgba(221, 221, 0, 1.0)"
+                            : (recent
+                                ? "rgba(0, 221, 0, 1.0)"
+                                : "rgba(235, 225, 255, 0.65)"
+                              )
+                    ctx.lineWidth = (recent || fresh) ? 3 : 1
                     ctx.fill()
                     ctx.stroke()
                 }
@@ -519,10 +526,10 @@ Page {
                     var fix = screenPoint(Number(stumblefish.status.latitude),
                                           Number(stumblefish.status.longitude))
                     ctx.beginPath()
-                    ctx.arc(fix.x, fix.y, 6, 0, Math.PI * 2)
-                    ctx.fillStyle = "rgba(30, 160, 255, 0.95)"
-                    ctx.strokeStyle = "rgba(255, 255, 255, 0.9)"
-                    ctx.lineWidth = 2
+                    ctx.arc(fix.x, fix.y, 14, 0, Math.PI * 2)
+                    ctx.fillStyle = "rgba(30, 160, 255, 0.5)"
+                    ctx.strokeStyle = "rgba(198, 198, 255, 0.9)"
+                    ctx.lineWidth = 4
                     ctx.fill()
                     ctx.stroke()
                 }
@@ -595,6 +602,54 @@ Page {
                 }
             }
         }
+        Rectangle {
+            radius: 4
+            z: 4
+            color: Theme.rgba(Theme.highlightBackgroundColor, 0.88)
+            anchors {
+                top: parent.top
+                left: parent.left
+                margins: Theme.paddingMedium
+            }
+            width: legend.width + 2 * Theme.paddingSmall
+            height: legend.height + 2 * Theme.paddingSmall
+
+            Column {
+                id: legend
+                spacing: Theme.paddingSmall
+                anchors.margins: Theme.paddingSmall
+                anchors.centerIn: parent
+                Row {
+                    spacing: Theme.paddingSmall
+                    Rectangle {
+                        height: Theme.paddingSmall; width: height*4
+                        anchors.verticalCenter: parent.verticalCenter
+                        border.color: Qt.rgba(221/255, 221/255, 0, 1.0)
+                        border.width: 2
+                        color: Qt.rgba(115/255, 60/255, 210/255, 0)
+                    }
+                    Label {
+                        text: qsTr("Pending Report")
+                        font.pixelSize: Theme.fontSizeTiny
+                    }
+                }
+                Row {
+                    spacing: Theme.paddingSmall
+                    Rectangle {
+                        anchors.verticalCenter: parent.verticalCenter
+                        height: Theme.paddingSmall; width: height*4
+                        border.color: Qt.rgba(0, 221/255, 0, 1.0)
+                        border.width: 2
+                        color: Qt.rgba(115/255, 60/255, 210/255, 0)
+                    }
+                    Label {
+                        text: qsTr("Seen today")
+                        font.pixelSize: Theme.fontSizeTiny
+                    }
+                }
+            }
+        }
+
 
         Column {
             id: mapControls
