@@ -33,12 +33,12 @@ Page {
 
         PullDownMenu {
             MenuItem {
-                text: "View map"
+                text: qsTr("View map")
                 enabled: count("total") > 0
                 onClicked: pageStack.push(Qt.resolvedUrl("MapPage.qml"))
             }
             MenuItem {
-                text: "Clear pending"
+                text: qsTr("Clear pending")
                 enabled: pendingUploadCount() > 0 && !stumblefish.busy
                 onClicked: remorse.execute("Clearing pending reports", function() {
                     stumblefish.clearPendingReports()
@@ -83,7 +83,7 @@ Page {
 
                 Label {
                     width: parent.width
-                    text: "#" + reportId + "  " + uploadStatus
+                    text: qsTr("#%1 %2").arg(reportId).arg(uploadStatus)
                     color: highlighted ? Theme.highlightColor : Theme.primaryColor
                     truncationMode: TruncationMode.Fade
                 }
@@ -103,7 +103,7 @@ Page {
 
         ViewPlaceholder {
             enabled: list.count === 0
-            text: "No reports to upload"
+            text: qsTr("No reports to upload")
         }
 
         VerticalScrollDecorator {}

@@ -37,15 +37,15 @@ Page {
 
         PullDownMenu {
             MenuItem {
-                text: "Settings"
+                text: qsTr("Settings")
                 onClicked: pageStack.push(Qt.resolvedUrl("SettingsPage.qml"))
             }
             MenuItem {
-                text: "Upload pending"
+                text: qsTr("Upload pending")
                 onClicked: stumblefish.uploadPending()
             }
             MenuItem {
-                text: "Refresh"
+                text: qsTr("Refresh")
                 onClicked: stumblefish.refresh()
             }
         }
@@ -60,33 +60,33 @@ Page {
             }
 
             SectionHeader {
-                text: "Collection"
+                text: qsTr("Collection")
             }
 
             DetailItem {
-                label: "Status"
+                label: qsTr("Status")
                 value: stumblefish.status.collectionStateMessage
             }
 
             DetailItem {
-                label: "Location"
+                label: qsTr("Location")
                 value: stumblefish.status.locationEnabled ? "enabled" : "disabled"
             }
 
             DetailItem {
-                label: "Cell"
+                label: qsTr("Cell")
                 value: stumblefish.status.cellAvailable
-                       ? (stumblefish.status.cellStatus || "available")
-                       : (stumblefish.status.cellUnavailableReason || "unavailable")
+                       ? (stumblefish.status.cellStatus || qsTr("available"))
+                       : (stumblefish.status.cellUnavailableReason || qsTr("unavailable"))
             }
 
             DetailItem {
-                label: "Position"
-                value: stumblefish.status.positionStatus || "unknown"
+                label: qsTr("Position")
+                value: stumblefish.status.positionStatus || qsTr("unknown")
             }
 
             DetailItem {
-                label: "Fix"
+                label: qsTr("Fix")
                 value: stumblefish.status.hasFix
                        ? stumblefish.status.latitude.toFixed(5) + ", "
                          + stumblefish.status.longitude.toFixed(5)
@@ -125,7 +125,7 @@ Page {
 
                     Label {
                         width: parent.width
-                        text: "Wi-Fi"
+                        text: qsTr("Wi-Fi")
                         horizontalAlignment: Text.AlignHCenter
                         color: sourceLabelColor(!!stumblefish.settings.wifiEnabled, true)
                         font.pixelSize: Theme.fontSizeSmall
@@ -148,7 +148,7 @@ Page {
 
                     Label {
                         width: parent.width
-                        text: "Cell"
+                        text: qsTr("Cell")
                         horizontalAlignment: Text.AlignHCenter
                         color: sourceLabelColor(!!stumblefish.settings.cellEnabled,
                                                 !!stumblefish.status.cellAvailable)
@@ -182,35 +182,35 @@ Page {
             }
 
             SectionHeader {
-                text: "Reports"
+                text: qsTr("Reports")
             }
 
             DetailItem {
-                label: "Pending"
+                label: qsTr("Pending")
                 value: count("pending")
             }
             DetailItem {
-                label: "Uploaded"
+                label: qsTr("Uploaded")
                 value: count("uploaded")
             }
             DetailItem {
-                label: "Failed"
+                label: qsTr("Failed")
                 value: count("failed")
             }
             DetailItem {
-                label: "Last report"
+                label: qsTr("Last report")
                 value: timeText(stumblefish.status.lastCollectedMs)
             }
 
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: "View reports"
+                text: qsTr("View reports")
                 onClicked: pageStack.push(Qt.resolvedUrl("ReportsPage.qml"))
             }
 
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: "View map"
+                text: qsTr("View map")
                 enabled: count("total") > 0
                 onClicked: pageStack.push(Qt.resolvedUrl("MapPage.qml"))
             }

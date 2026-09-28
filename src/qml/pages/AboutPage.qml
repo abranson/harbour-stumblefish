@@ -13,7 +13,7 @@ Page {
             spacing: Theme.paddingMedium
 
             PageHeader {
-                title: "About"
+                title: qsTr("About")
             }
 
             Label {
@@ -29,7 +29,7 @@ Page {
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
-                text: "Geosubmit location report collector for Sailfish OS"
+                text: qsTr("Geosubmit location report collector for Sailfish OS")
                 color: Theme.secondaryColor
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
@@ -38,7 +38,7 @@ Page {
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
-                text: "by Andrew Branson"
+                text: qsTr("by Andrew Branson")
                 color: Theme.secondaryColor
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
@@ -47,7 +47,7 @@ Page {
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
-                text: "Heavily based on NeoStumbler. Thanks to the NeoStumbler project and its contributors."
+                text: qsTr("Heavily based on NeoStumbler. Thanks to the NeoStumbler project and its contributors.")
                 color: Theme.secondaryHighlightColor
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
@@ -77,7 +77,7 @@ Page {
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
-                text: "The Motorcycle Fish says:"
+                text: qsTr("The Motorcycle Fish says:")
                 color: Theme.secondaryHighlightColor
                 font.pixelSize: Theme.fontSizeSmall
                 font.italic: true
@@ -88,7 +88,7 @@ Page {
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
-                text: "\"If you're gonna lead people, you have to have somewhere to go.\""
+                text: qsTr("\"If you're gonna lead people, you have to have somewhere to go.\"")
                 color: Theme.highlightColor
                 font.pixelSize: Theme.fontSizeMedium
                 horizontalAlignment: Text.AlignRight

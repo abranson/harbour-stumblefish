@@ -183,35 +183,35 @@ Page {
             spacing: Theme.paddingMedium
 
             PageHeader {
-                title: "Report " + reportId
+                title: qsTr("Report %1").arg(reportId)
             }
 
             DetailItem {
-                label: "Status"
+                label: qsTr("Status")
                 value: field("uploadStatus", "")
             }
             DetailItem {
-                label: "Time"
+                label: qsTr("Time")
                 value: timeText(field("timestampMs", 0))
             }
             DetailItem {
-                label: "Position"
+                label: qsTr("Position")
                 value: positionText()
             }
             DetailItem {
-                label: "Accuracy"
+                label: qsTr("Accuracy")
                 value: field("id", 0) ? Math.round(Number(field("accuracy", 0))) + " m" : ""
             }
             DetailItem {
-                label: "Mode"
+                label: qsTr("Mode")
                 value: field("mode", "")
             }
             DetailItem {
-                label: "Endpoint"
+                label: qsTr("Endpoint")
                 value: field("endpoint", "")
             }
             DetailItem {
-                label: "Uploaded"
+                label: qsTr("Uploaded")
                 value: timeText(field("uploadedAtMs", 0))
                 visible: value.length > 0
             }

@@ -55,7 +55,7 @@ CoverBackground {
 
         Label {
             width: parent.width
-            text: pendingCount() + " pending"
+            text: qsTr("%1 pending").arg(pendingCount())
             horizontalAlignment: Text.AlignHCenter
             color: Theme.highlightColor
         }

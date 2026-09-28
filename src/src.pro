@@ -5,6 +5,8 @@ CONFIG += c++11 link_pkgconfig
 QT += dbus network qml quick
 PKGCONFIG += sailfishapp
 
+CONFIG += sailfishapp_i18n
+
 INCLUDEPATH += . ../common
 DEFINES += APP_VERSION=\\\"$$VERSION\\\"
 
@@ -16,6 +18,10 @@ SOURCES += \
 HEADERS += \
     mapnetworkaccessmanagerfactory.h \
     stumblefishclient.h
+
+TRANSLATIONS += \
+    translations/harbour-stumblefish.ts \
+    translations/harbour-stumblefish-de.ts
 
 DISTFILES += \
     Stumblefish.permission \

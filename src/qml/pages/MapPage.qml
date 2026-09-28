@@ -392,7 +392,7 @@ Page {
             left: parent.left
             right: parent.right
         }
-        title: "Report map"
+        title: qsTr("Report Map")
     }
 
     Item {

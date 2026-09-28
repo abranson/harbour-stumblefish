@@ -121,7 +121,7 @@ Page {
 
         PullDownMenu {
             MenuItem {
-                text: "About"
+                text: qsTr("About")
                 onClicked: pageStack.push(Qt.resolvedUrl("AboutPage.qml"))
             }
         }
@@ -132,46 +132,46 @@ Page {
             spacing: Theme.paddingMedium
 
             PageHeader {
-                title: "Settings"
+                title: qsTr("Settings")
             }
 
             SectionHeader {
-                text: "Daemon"
+                text: qsTr("Daemon")
             }
 
             TextSwitch {
-                text: "Allow background collection"
+                text: qsTr("Allow background collection")
                 description: checked
-                             ? "Keeps the collector daemon running after Stumblefish closes"
-                             : "Stops the collector daemon when Stumblefish closes"
+                             ? qsTr("Keeps the collector daemon running after Stumblefish closes")
+                             : qsTr("Stops the collector daemon when Stumblefish closes")
                 checked: !!stumblefish.settings.allowBackgroundDaemon
                 onClicked: stumblefish.setAllowBackgroundDaemon(checked)
             }
 
             TextSwitch {
-                text: "Status notifications"
+                text: qsTr("Status notifications")
                 description: checked
-                             ? "Shows collection status while active"
-                             : "Hides collection status notifications"
+                             ? qsTr("Shows collection status while active")
+                             : qsTr("Hides collection status notifications")
                 checked: !hasSetting("statusNotificationsEnabled")
                          || !!stumblefish.settings.statusNotificationsEnabled
                 onClicked: stumblefish.setStatusNotificationsEnabled(checked)
             }
 
             TextSwitch {
-                text: "Active mode when closed"
+                text: qsTr("Active mode when closed")
                 description: checked
-                             ? "Requests location fixes while running in background"
-                             : "Uses other apps' fixes while running in background"
+                             ? qsTr("Requests location fixes while running in background")
+                             : qsTr("Uses other apps' fixes while running in background")
                 checked: stumblefish.settings.mode !== "passive"
                 onClicked: stumblefish.setMode(checked ? "active" : "passive")
             }
 
             TextSwitch {
-                text: "Pause active mode on low battery"
+                text: qsTr("Pause active mode on low battery")
                 description: checked
-                             ? "Stops active background fixes below 20% unless plugged in"
-                             : "Keeps active background fixes running below 20%"
+                             ? qsTr("Stops active background fixes below 20% unless plugged in")
+                             : qsTr("Keeps active background fixes running below 20%")
                 checked: !hasSetting("pauseActiveBackgroundOnLowBattery")
                          || !!stumblefish.settings.pauseActiveBackgroundOnLowBattery
                 onClicked: stumblefish.setPauseActiveBackgroundOnLowBattery(checked)
@@ -180,26 +180,26 @@ Page {
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
-                text: "Permanent location fixes will drain your battery much faster that usual."
+                text: qsTr("Permanent location fixes will drain your battery much faster that usual.")
                 color: Theme.errorColor
                 font.pixelSize: Theme.fontSizeSmall
                 wrapMode: Text.Wrap
             }
 
             SectionHeader {
-                text: "Upload"
+                text: qsTr("Upload")
             }
 
             TextSwitch {
-                text: "Automatic upload"
-                description: "Every 8 hours"
+                text: qsTr("Automatic upload")
+                description: qsTr("Every 8 hours")
                 checked: !!stumblefish.settings.autoUploadEnabled
                 onClicked: stumblefish.setAutoUploadEnabled(checked)
             }
 
             TextSwitch {
-                text: "Upload when not on Wi-Fi"
-                description: "Applies to automatic uploads"
+                text: qsTr("Upload when not on Wi-Fi")
+                description: qsTr("Applies to automatic uploads")
                 checked: !!stumblefish.settings.uploadOnNonWifi
                 onClicked: stumblefish.setUploadOnNonWifi(checked)
             }
@@ -227,13 +227,13 @@ Page {
             }
 
             SectionHeader {
-                text: "Map"
+                text: qsTr("Map")
             }
 
             TextField {
                 id: tileUrl
                 width: parent.width
-                label: "Tile URL template"
+                label: qsTr("Tile URL template")
                 inputMethodHints: Qt.ImhUrlCharactersOnly | Qt.ImhNoPredictiveText
                 EnterKey.iconSource: "image://theme/icon-m-enter-accept"
                 EnterKey.onClicked: {
@@ -254,7 +254,7 @@ Page {
 
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: "Use OSM tiles"
+                text: qsTr("Use OSM tiles")
                 onClicked: {
                     tileUrl.text = defaultTileUrl
                     page.saveTileUrlField(true)
@@ -263,7 +263,7 @@ Page {
 
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: "Disable map tiles"
+                text: qsTr("Disable map tiles")
                 onClicked: {
                     tileUrl.text = ""
                     page.saveTileUrlField(true)
@@ -273,37 +273,37 @@ Page {
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
-                text: "Map tiles are fetched from the configured provider and may reveal viewed map areas to that provider."
+                text: qsTr("Map tiles are fetched from the configured provider and may reveal viewed map areas to that provider.")
                 color: Theme.secondaryColor
                 font.pixelSize: Theme.fontSizeSmall
                 wrapMode: Text.Wrap
             }
 
             SectionHeader {
-                text: "Storage"
+                text: qsTr("Storage")
             }
 
             ComboBox {
                 width: parent.width
-                label: "Delete reports older than"
+                label: qsTr("Delete reports older than")
                 currentIndex: retentionIndex(stumblefish.settings.reportRetentionDays === undefined
                                              ? 60 : stumblefish.settings.reportRetentionDays)
 
                 menu: ContextMenu {
                     MenuItem {
-                        text: "30 days"
+                        text: qsTr("30 days")
                         onClicked: stumblefish.setReportRetentionDays(30)
                     }
                     MenuItem {
-                        text: "60 days"
+                        text: qsTr("60 days")
                         onClicked: stumblefish.setReportRetentionDays(60)
                     }
                     MenuItem {
-                        text: "180 days"
+                        text: qsTr("180 days")
                         onClicked: stumblefish.setReportRetentionDays(180)
                     }
                     MenuItem {
-                        text: "Never"
+                        text: qsTr("Never")
                         onClicked: stumblefish.setReportRetentionDays(-1)
                     }
                 }
@@ -311,7 +311,7 @@ Page {
 
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: "Prune old reports now"
+                text: qsTr("Prune old reports now")
                 enabled: !stumblefish.busy
                 onClicked: stumblefish.pruneReports()
             }

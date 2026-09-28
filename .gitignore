@@ -17,3 +17,5 @@
 /tests/moc_*.cpp
 /tests/*.moc
 /tests/target_wrapper.sh
+src/translations/*.qm
+*.swp
