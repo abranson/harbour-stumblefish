@@ -8,5 +8,5 @@ Name=Stumblefish
 
 [X-Sailjail]
 OrganizationName=org.stumblefish
-ApplicationName=Stumblefish
+ApplicationName=harbour-stumblefish
 Permissions=Location;Internet;Bluetooth;Stumblefish
