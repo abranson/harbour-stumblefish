@@ -136,8 +136,8 @@ Service::Service(QObject *parent)
     connect(&m_autoUploadTimer, SIGNAL(timeout()), this, SLOT(autoUploadDueReports()));
     connect(&m_pruneTimer, SIGNAL(timeout()), this, SLOT(pruneDueReports()));
     connect(&m_lifecycleQuitTimer, SIGNAL(timeout()), this, SLOT(quitForAppLifecycle()));
-    connect(&m_passiveStatusNotificationTimer, SIGNAL(timeout()),
-            this, SLOT(closePassiveStatusNotification()));
+    connect(&m_passiveStatusNotificationTimer, &QTimer::timeout,
+            this, &Service::closePassiveStatusNotification);
     connect(&m_clientWatcher, SIGNAL(serviceUnregistered(QString)),
             this, SLOT(clientServiceUnregistered(QString)));
     m_lifecycleQuitTimer.setSingleShot(true);
