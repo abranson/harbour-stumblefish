@@ -516,7 +516,8 @@ bool Service::activeBackgroundPausedForBattery() const
     return m_appClients.isEmpty()
             && m_settings.mode() == QStringLiteral("active")
             && m_settings.pauseActiveBackgroundOnLowBattery()
-            && m_battery.lowAndUnplugged(LowBatteryThresholdPercentage);
+            && ( m_battery.lowAndUnplugged(LowBatteryThresholdPercentage)
+                  || m_battery.psmEnabled());
 }
 
 bool Service::positionShouldBeActive() const

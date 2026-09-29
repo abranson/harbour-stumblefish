@@ -4,11 +4,14 @@
 BatteryMonitor::BatteryMonitor(QObject *parent)
     : QObject(parent)
     , m_status(this)
+    , m_displaysettings(this)
 {
     connect(&m_status, &BatteryStatus::chargePercentageChanged,
             this, [this](int) { emit changed(); });
     connect(&m_status, &BatteryStatus::chargerStatusChanged,
             this, [this](BatteryStatus::ChargerStatus) { emit changed(); });
+    connect(&m_displaysettings, &DisplaySettings::powerSaveModeEnabledChanged,
+            this, [this]() { emit changed(); });
 }
 
 bool BatteryMonitor::available() const
@@ -24,6 +27,11 @@ int BatteryMonitor::chargePercentage() const
 bool BatteryMonitor::pluggedIn() const
 {
     return m_status.chargerStatus() == BatteryStatus::Connected;
+}
+
+bool BatteryMonitor::psmEnabled() const
+{
+    return m_displaysettings.powerSaveModeEnabled();
 }
 
 bool BatteryMonitor::lowAndUnplugged(int thresholdPercentage) const

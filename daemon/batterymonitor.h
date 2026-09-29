@@ -5,6 +5,7 @@
 #include <QObject>
 
 #include <batterystatus.h>
+#include <displaysettings.h>
 
 class BatteryMonitor : public QObject
 {
@@ -17,12 +18,14 @@ public:
     int chargePercentage() const;
     bool pluggedIn() const;
     bool lowAndUnplugged(int thresholdPercentage) const;
+    bool psmEnabled() const;
 
 Q_SIGNALS:
     void changed();
 
 private:
     BatteryStatus m_status;
+    DisplaySettings m_displaysettings;
 };
 
 #endif
