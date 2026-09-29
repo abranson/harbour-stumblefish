@@ -38,7 +38,7 @@ const char StatusNotificationOrigin[] = "org.stumblefish.status";
 bool isStatusNotification(Notification *notification)
 {
     return notification
-            && (notification->origin() == QString::fromLatin1(StatusNotificationOrigin)
+            && (notification->subText() == QString::fromLatin1(StatusNotificationOrigin)
                 || (notification->appName() == QStringLiteral("Stumblefish")
                     && notification->summary() == QStringLiteral("Stumblefish")
                     && notification->appIcon() == QString::fromLatin1(Stumblefish::ApplicationName)));
@@ -870,7 +870,7 @@ void Service::publishStatusNotification(const QString &notificationBody)
     m_statusNotification->setAppName(QStringLiteral("Stumblefish"));
     m_statusNotification->setAppIcon(QString::fromLatin1(Stumblefish::ApplicationName));
     m_statusNotification->setCategory(QString::fromLatin1(StatusNotificationCategory));
-    m_statusNotification->setOrigin(QString::fromLatin1(StatusNotificationOrigin));
+    m_statusNotification->setSubText(QString::fromLatin1(StatusNotificationOrigin));
     m_statusNotification->setSummary(QStringLiteral("Stumblefish"));
     m_statusNotification->setBody(notificationBody);
     m_statusNotification->setPreviewSummary(QStringLiteral("Stumblefish"));
