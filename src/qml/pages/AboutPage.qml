@@ -47,7 +47,7 @@ Page {
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
-                text: qsTr("Heavily based on NeoStumbler. Thanks to the NeoStumbler project and its contributors.")
+                text: qsTr("Contributors:")
                 color: Theme.secondaryHighlightColor
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
@@ -56,7 +56,16 @@ Page {
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
-                text: qsTr("Contributors:") + "\nnephros"
+                text: "nephros"
+                color: Theme.secondaryHighlightColor
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.Wrap
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                text: qsTr("Heavily based on NeoStumbler. Thanks to the NeoStumbler project and everyone involved.")
                 color: Theme.secondaryHighlightColor
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap

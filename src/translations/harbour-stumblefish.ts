@@ -20,26 +20,26 @@
     </message>
     <message>
         <location filename="../qml/pages/AboutPage.qml" line="50"/>
-        <source>Heavily based on NeoStumbler. Thanks to the NeoStumbler project and its contributors.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../qml/pages/AboutPage.qml" line="59"/>
         <source>Contributors:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/AboutPage.qml" line="76"/>
+        <location filename="../qml/pages/AboutPage.qml" line="68"/>
+        <source>Heavily based on NeoStumbler. Thanks to the NeoStumbler project and everyone involved.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/AboutPage.qml" line="85"/>
         <source>Translate on Weblate</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/AboutPage.qml" line="95"/>
+        <location filename="../qml/pages/AboutPage.qml" line="104"/>
         <source>The Motorcycle Fish says:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/AboutPage.qml" line="106"/>
+        <location filename="../qml/pages/AboutPage.qml" line="115"/>
         <source>&quot;If you&apos;re gonna lead people, you have to have somewhere to go.&quot;</source>
         <translation type="unfinished"></translation>
     </message>
@@ -47,7 +47,7 @@
 <context>
     <name>CoverPage</name>
     <message>
-        <location filename="../qml/cover/CoverPage.qml" line="44"/>
+        <location filename="../qml/cover/CoverPage.qml" line="58"/>
         <source>%1 pending</source>
         <translation type="unfinished"></translation>
     </message>
@@ -161,6 +161,16 @@
     <message>
         <location filename="../qml/pages/MapPage.qml" line="395"/>
         <source>Report Map</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/MapPage.qml" line="632"/>
+        <source>Pending Report</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/MapPage.qml" line="646"/>
+        <source>Seen today</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
