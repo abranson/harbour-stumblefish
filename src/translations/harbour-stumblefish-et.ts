@@ -151,7 +151,7 @@
     <message>
         <location filename="../qml/pages/MapPage.qml" line="395"/>
         <source>Report Map</source>
-        <translation type="unfinished"></translation>
+        <translation>Aruande kaart</translation>
     </message>
 </context>
 <context>
@@ -159,7 +159,7 @@
     <message>
         <location filename="../qml/pages/ReportDetailPage.qml" line="186"/>
         <source>Report %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Aruanne %1</translation>
     </message>
     <message>
         <location filename="../qml/pages/ReportDetailPage.qml" line="190"/>
@@ -260,97 +260,97 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="154"/>
         <source>Shows collection status while active</source>
-        <translation type="unfinished"></translation>
+        <translation>Näitab andmekogumise olekut töösoleku ajal</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="155"/>
         <source>Hides collection status notifications</source>
-        <translation type="unfinished"></translation>
+        <translation>Peidab andmekogumise oleku töösoleku ajal</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="162"/>
         <source>Active mode when closed</source>
-        <translation type="unfinished"></translation>
+        <translation>Töösolek sulgemisel</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="164"/>
         <source>Requests location fixes while running in background</source>
-        <translation type="unfinished"></translation>
+        <translation>Tuvastab taustal töötamisel asukohta</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="165"/>
         <source>Uses other apps&apos; fixes while running in background</source>
-        <translation type="unfinished"></translation>
+        <translation>Kasutab taustal töötades muude rakenduste asukohatuvastust</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="171"/>
         <source>Pause active mode on low battery</source>
-        <translation type="unfinished"></translation>
+        <translation>Peata aktiivne kasutus madala akulaetuse puhul</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="173"/>
         <source>Stops active background fixes below 20% unless plugged in</source>
-        <translation type="unfinished"></translation>
+        <translation>Lõpetab aktiivse asukohatuvastuse taustal alla 20% akulaetuse puhul, väljaarvatud toite ühendamisel</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="174"/>
         <source>Keeps active background fixes running below 20%</source>
-        <translation type="unfinished"></translation>
+        <translation>Jätkab aktiivset asukohatuvastust taustal alla 20% akulaetuse puhul</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="183"/>
         <source>Permanent location fixes will drain your battery much faster that usual.</source>
-        <translation type="unfinished"></translation>
+        <translation>Pidev asukohatuvastus kurnab akukasutust märksa rohkem, kui tavakasutus.</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="190"/>
         <source>Upload</source>
-        <translation type="unfinished"></translation>
+        <translation>Üleslaadmine</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="194"/>
         <source>Automatic upload</source>
-        <translation type="unfinished"></translation>
+        <translation>Automaatne üleslaadmine</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="195"/>
         <source>Every 8 hours</source>
-        <translation type="unfinished"></translation>
+        <translation>Iga 8 tunni möödudes</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="201"/>
         <source>Upload when not on Wi-Fi</source>
-        <translation type="unfinished"></translation>
+        <translation>Laadi üles ka siis, kui pole WiFi võrgus</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="202"/>
         <source>Applies to automatic uploads</source>
-        <translation type="unfinished"></translation>
+        <translation>Kehtib automaatse üleslaadimise kohta</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="230"/>
         <source>Map</source>
-        <translation type="unfinished"></translation>
+        <translation>Kaart</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="236"/>
         <source>Tile URL template</source>
-        <translation type="unfinished"></translation>
+        <translation>Kaardipaanide võrguaadressi mall</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="257"/>
         <source>Use OSM tiles</source>
-        <translation type="unfinished"></translation>
+        <translation>Kasuta OSM-i kaardipaane</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="266"/>
         <source>Disable map tiles</source>
-        <translation type="unfinished"></translation>
+        <translation>Lülita kaardipaanid välja</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="276"/>
         <source>Map tiles are fetched from the configured provider and may reveal viewed map areas to that provider.</source>
-        <translation type="unfinished"></translation>
+        <translation>Kaardipaanid laaditakse alla seadistatud teenusepakkujalt ning see võib avalikustada vaadatud kaardipiirkonnad kõnealusele teenusepakkujale.</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="283"/>
